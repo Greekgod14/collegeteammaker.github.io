@@ -21,6 +21,21 @@ if (!currentUser) {
   }
 }
 
+function logout() {
+    localStorage.removeItem('currentUser');
+    Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('user_')) {
+            localStorage.removeItem(key);
+        }
+    });
+    
+    firebase.auth().signOut();
+    
+    window.location.href = 'login.html';
+    
+    return false; 
+}
+
 async function handleSubmitInfo(event) {
     event.preventDefault();
     

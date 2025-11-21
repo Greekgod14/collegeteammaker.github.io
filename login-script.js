@@ -122,7 +122,7 @@ async function login(username, password) {
       // TODO: Implement admin redirect if needed
       return { success: true, user: user, isAdmin: true };
     } else {
-      if (!userData.studentid || userData.studentid === "") {
+      if (!userData.studentid || userData.studentid == "") {
         localStorage.setItem(
           "currentUser",
           JSON.stringify({

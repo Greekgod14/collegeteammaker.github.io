@@ -9,7 +9,7 @@ const students = {
     eee: [],
     civil: []
 };
-
+displayStudents() ;
 const captains = {
     aiml: [],
     cse: [],
@@ -85,30 +85,152 @@ function removeStudent(branch, index, isCaptain = false) {
     }
 }
 
-function displayStudents() {
+// function displayStudents() {
+//     const container = document.getElementById('studentsList');
+//     container.innerHTML = '';
+    
+//     for (const [branch, studentList] of Object.entries(students)) {
+//         const captainList = captains[branch] || [];
+//         const totalCount = studentList.length + captainList.length;
+        
+//         if (totalCount > 0) {
+//             const branchDiv = document.createElement('div');
+//             branchDiv.className = 'branch-group';
+            
+//             const allStudents = [
+//                 ...captainList.map((student, index) => ({ ...student, index, isCaptain: true })),
+//                 ...studentList.map((student, index) => ({ ...student, index, isCaptain: false }))
+//             ];
+            
+//             branchDiv.innerHTML = `
+//                 <div class="branch-title">${branchNames[branch]} (${totalCount})</div>
+//                 <div class="student-list">
+//                     ${allStudents.map(student => `
+//                         <span class="student-tag ${student.isCaptain ? 'captain' : ''}">
+//                             ${student.display || student.name}
+//                             <span class="remove-btn" onclick="removeStudent('${branch}', ${student.index}, ${student.isCaptain})">&times;</span>
+//                         </span>
+//                     `).join('')}
+//                 </div>
+//             `;
+            
+//             container.appendChild(branchDiv);
+//         }
+//     }
+// }
+
+
+// async function displayStudents() {
+//     const container = document.getElementById('studentsList');
+//     container.innerHTML = '';
+    
+//     try {
+//         const db = firebase.firestore();
+//         const membersSnapshot = await db.collection('members').get();
+        
+//         if (membersSnapshot.empty) {
+//             container.innerHTML = '<div class="no-students">No students found</div>';
+//             return;
+//         }
+        
+//         const branchGroups = {};
+        
+//         membersSnapshot.forEach(doc => {
+//             const studentData = doc.data();
+//             const branch = studentData.department;
+            
+//             if (!branchGroups[branch]) {
+//                 branchGroups[branch] = [];
+//             }
+            
+//             const displayString = `${studentData.name} | ${studentData.admissionNumber} | ${studentData.section} | ${studentData.department}`;
+            
+//             branchGroups[branch].push({
+//                 display: displayString,
+//                 name: studentData.name,
+//                 admissionNumber: studentData.admissionNumber,
+//                 section: studentData.section,
+//                 department: studentData.department,
+//                 id: doc.id
+//             });
+//         });
+        
+//         for (const [branch, studentList] of Object.entries(branchGroups)) {
+//             const totalCount = studentList.length;
+            
+//             const branchDiv = document.createElement('div');
+//             branchDiv.className = 'branch-group';
+            
+//             branchDiv.innerHTML = `
+//                 <div class="branch-title">${branch} (${totalCount})</div>
+//                 <div class="student-list">
+//                     ${studentList.map(student => `
+//                         <span class="student-tag">
+//                             ${student.display}
+//                             <span class="remove-btn" onclick="removeStudent('${student.id}')">&times;</span>
+//                         </span>
+//                     `).join('')}
+//                 </div>
+//             `;
+            
+//             container.appendChild(branchDiv);
+//         }
+        
+//     } catch (error) {
+//         console.error('Error loading students:', error);
+//         container.innerHTML = '<div class="error">Error loading students</div>';
+//     }
+// }
+
+let allStudents = []; // Global variable to store students
+
+async function displayStudents() {
     const container = document.getElementById('studentsList');
     container.innerHTML = '';
     
-    for (const [branch, studentList] of Object.entries(students)) {
-        const captainList = captains[branch] || [];
-        const totalCount = studentList.length + captainList.length;
+    try {
+        const db = firebase.firestore();
+        const membersSnapshot = await db.collection('members').get();
         
-        if (totalCount > 0) {
+        if (membersSnapshot.empty) {
+            container.innerHTML = '<div class="no-students">No students found</div>';
+            return [];
+        }
+        
+        allStudents = [];
+        const branchGroups = {};
+        
+        membersSnapshot.forEach(doc => {
+            const studentData = doc.data();
+            const branch = studentData.department;
+            
+            if (!branchGroups[branch]) {
+                branchGroups[branch] = [];
+            }
+            
+            const studentWithId = {
+                ...studentData,
+                id: doc.id,
+                display: `${studentData.name} | ${studentData.admissionNumber} | ${studentData.section} | ${studentData.department}`
+            };
+            
+            branchGroups[branch].push(studentWithId);
+            allStudents.push(studentWithId);
+        });
+        
+         for (const [branch, studentList] of Object.entries(branchGroups)) {
+            const totalCount = studentList.length;
+            
             const branchDiv = document.createElement('div');
             branchDiv.className = 'branch-group';
             
-            const allStudents = [
-                ...captainList.map((student, index) => ({ ...student, index, isCaptain: true })),
-                ...studentList.map((student, index) => ({ ...student, index, isCaptain: false }))
-            ];
-            
             branchDiv.innerHTML = `
-                <div class="branch-title">${branchNames[branch]} (${totalCount})</div>
+                <div class="branch-title">${branch} (${totalCount})</div>
                 <div class="student-list">
-                    ${allStudents.map(student => `
-                        <span class="student-tag ${student.isCaptain ? 'captain' : ''}">
-                            ${student.display || student.name}
-                            <span class="remove-btn" onclick="removeStudent('${branch}', ${student.index}, ${student.isCaptain})">&times;</span>
+                    ${studentList.map(student => `
+                        <span class="student-tag">
+                            ${student.display}
+                            <span class="remove-btn" onclick="removeStudent('${student.id}')">&times;</span>
                         </span>
                     `).join('')}
                 </div>
@@ -116,6 +238,13 @@ function displayStudents() {
             
             container.appendChild(branchDiv);
         }
+        
+        
+        return allStudents; 
+        
+    } catch (error) {
+        console.error('Error loading students:', error);
+        return [];
     }
 }
 
