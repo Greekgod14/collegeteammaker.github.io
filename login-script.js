@@ -38,24 +38,25 @@
 //   }
 // }
 
-const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+// const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
-if (!currentUser) {
-  showLogin(); 
-} else {
-  const username = currentUser.username;
-  const hasCompletedSecondStep = currentUser.completedSecondStep;
-  const isadmin = currentUser.isAdmin;
-  if (isadmin) {
-    window.location.href = "dashboard.html";
-  } else {
-    if (hasCompletedSecondStep) {
-      window.location.href = "signupprocess.html";
-    } else {
-      window.location.href = "index.html";}
-  }
-}
+// if (!currentUser) {
+//   showLogin();
+// } else {
+//   const username = currentUser.username;
+//   const hasCompletedSecondStep = currentUser.completedSecondStep;
+//   const isadmin = currentUser.isAdmin;
+//   if (isadmin) {
+//     window.location.href = "dashboard.html";
+//   } else {
+//     if (hasCompletedSecondStep) {
+//       window.location.href = "signupprocess.html";
+//     } else {
+//       window.location.href = "index.html";}
+//   }
+// }
 
+showLogin();
 
 function showSignup() {
   document.getElementById("loginForm").style.display = "none";
@@ -68,101 +69,167 @@ function showLogin() {
   document.getElementById("loginForm").style.display = "block";
   document.getElementById("headerTitle").textContent = "Login";
 }
+async function login(username, password) {
+  try {
+    console.log("=== Login Attempt ===");
+    console.log("Username:", username);
 
+    // Step 1: Query user by username
+    const { data: users, error: queryError } = await window.supabase
+      .from("Users")
+      .select("*")
+      .eq("username", username)
+      .limit(1);
 
+    if (queryError) {
+      console.error("User query failed:", queryError);
+      return { success: false, error: "Database error. Please try again." };
+    }
 
-async function handleLogin() {
-  var username = document.getElementById("username").value;
-  var password = document.getElementById("password").value;
+    if (!users || users.length === 0) {
+      console.error("User not found");
+      return { success: false, error: "Username not found" };
+    }
 
-  if (username === "" || password === "") {
-    alert("Please fill all fields");
+    const userData = users[0];
+    const userEmail = userData.email;
+    console.log("Found user email:", userEmail);
+
+    // Step 2: Authenticate with Supabase Auth
+    const { data: authData, error: authError } =
+      await window.supabase.auth.signInWithPassword({
+        email: userEmail,
+        password: password,
+      });
+
+    if (authError) {
+      console.error("Auth error:", authError.message);
+      return { success: false, error: "Invalid password" };
+    }
+
+    if (!authData?.user || !authData?.session) {
+      console.error("No auth data returned");
+      return { success: false, error: "Authentication failed" };
+    }
+
+    console.log("Auth successful, user ID:", authData.user.id);
+
+    // Step 3: Ensure session is set
+    console.log("Setting session...");
+    await window.supabase.auth.setSession(authData.session);
+    
+    // Step 4: Wait for session to persist
+    console.log("Waiting for session to persist...");
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    // Step 5: Store minimal user data in localStorage
+    const userCacheData = {
+      id: authData.user.id,
+      uuid: authData.user.id,
+      username: userData.username,
+      email: userData.email,
+      isAdmin: userData.isAdmin || false,
+      verified: userData.verified || false,
+      admissionNumber: userData.admissionNumber || "",
+    };
+
+    localStorage.setItem("currentUser", JSON.stringify(userCacheData));
+    console.log("Login completed successfully, user data stored");
+
+    return {
+      success: true,
+      user: authData.user,
+      userData: userData,
+    };
+
+  } catch (error) {
+    console.error("Login error:", error);
+    return { success: false, error: error.message || "An error occurred during login" };
+  }
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  clearError(false);
+
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value;
+
+  if (!username || !password) {
+    showError("Please fill all fields", false);
     return;
   }
 
+  setButtonState("loginBtn", true, "Logging in...");
+
   const result = await login(username, password);
+
   if (result.success) {
-    if (result.isAdmin) {
-      // TODO: Implement admin redirect if needed
-      // window.location.href = "admin.html";
-    }
-    // Regular user redirect is handled in login function
+    console.log("Login successful, showing animation...");
+    showTempleGateAnimation();
+    
+    // Wait for animation to complete, then trigger firestore redirect logic
+    setTimeout(() => {
+      console.log("Animation complete, initializing auth...");
+      window.initializeAuth();
+    }, 3000);
+    
   } else {
-    showError("Login failed: " + result.error);
+    console.error("Login failed:", result.error);
+    showError("Login failed: " + result.error, false);
+    setButtonState("loginBtn", false, "Login");
   }
 }
 
-async function login(username, password) {
-  try {
-    const auth = firebase.auth();
-    const db = firebase.firestore();
 
-    const usernameSnapshot = await db
-      .collection("Users")
-      .where("username", "==", username)
-      .get();
+function setButtonState(buttonId, loading = false, text = null) {
+  const btn = document.getElementById(buttonId);
+  if (loading) {
+    btn.disabled = true;
+    btn.textContent = text || "Loading...";
+    btn.style.opacity = "0.6";
+  } else {
+    btn.disabled = false;
+    btn.textContent = text || (buttonId === "loginBtn" ? "Login" : "Sign Up");
+    btn.style.opacity = "1";
+  }
+}
 
-    if (usernameSnapshot.empty) {
-      return { success: false, error: "User not found" };
-    }
+function setupStyleToggle() {
+    const styleToggle = document.getElementById('styleToggle');
+    const currentStyle = localStorage.getItem('style') || 'style1';
+    
+    setStyle(currentStyle);
+    
+    styleToggle.addEventListener('click', () => {
+        const newStyle = document.getElementById('theme-style').getAttribute('href').includes('style2') ? 'style1' : 'style2';
+        setStyle(newStyle);
+    });
+}
 
-    const userDoc = usernameSnapshot.docs[0];
-    const userData = userDoc.data();
-    const userEmail = userData.email;
-    const userId = userDoc.id; // This is the user's UID
-
-    const userCredential = await auth.signInWithEmailAndPassword(
-      userEmail,
-      password
-    );
-    const user = userCredential.user;
-    user.username = username;
-
-    if (userData.isAdmin) {
-      // TODO: Implement admin redirect if needed
-      return { success: true, user: user, isAdmin: true };
+function setStyle(style) {
+    const link = document.getElementById('theme-style');
+    
+    if (style === 'style2') {
+        link.setAttribute('href', 'style/login-style2.css');
+        localStorage.setItem('style', 'style2');
     } else {
-      if (!userData.studentid || userData.studentid == "") {
-        localStorage.setItem(
-          "currentUser",
-          JSON.stringify({
-            ...user,
-            completedSecondStep: false,
-          })
-        );
-        showTempleGateAnimation();
-        window.location.href = "signupprocess.html";
-      } else {
-        //TODO: Implement check for studentid
-        localStorage.setItem(
-          "currentUser",
-          JSON.stringify({
-            ...user,
-            completedSecondStep: false,
-          })
-        );
-        showTempleGateAnimation();
-
-        window.location.href = "index.html";
-      }
-      return { success: true, user: user, isAdmin: false };
+        link.setAttribute('href', 'style/login-style.css');
+        localStorage.setItem('style', 'style1');
     }
-  } catch (error) {
-    console.error("Login error:", error.message);
-    return { success: false, error: error.message };
-  }
 }
+document.addEventListener("DOMContentLoaded", function() {
+    setupStyleToggle(); 
+});
 
 function showTempleGateAnimation() {
   const templeGate = document.getElementById("templeGate");
   const loadingOverlay = document.getElementById("loadingOverlay");
 
-  // Show temple gate animation
   if (templeGate) {
     templeGate.classList.add("active");
   }
 
-  // After gate animation, show loading
   setTimeout(() => {
     if (templeGate) {
       templeGate.classList.remove("active");
@@ -192,7 +259,7 @@ async function handleSignup() {
   //     confirmPassword
   // );
 
-   if (password.length < 6) {
+  if (password.length < 6) {
     showError("Password must be at least 6 characters long");
     return;
   }
@@ -236,34 +303,74 @@ async function handleSignup() {
 
 async function signup(email, password, username) {
   try {
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+    const supabaseClient = window.supabase || supabase;
 
-    const usernameSnapshot = await db
-      .collection("members")
-      .where("username", "==", username)
-      .get();
+    const { data: existingUsers, error: queryError } = await supabaseClient
+      .from("Users")
+      .select("id")
+      .eq("username", username)
+      .limit(1);
 
-    if (!usernameSnapshot.empty) {
+    if (queryError) {
+      console.error("Username check error:", queryError);
+      return { success: false, error: "Database error checking username" };
+    }
+
+    if (existingUsers && existingUsers.length > 0) {
       return { success: false, error: "Username already exists" };
     }
 
-    const userCredential = await auth.createUserWithEmailAndPassword(
-      email,
-      password
-    );
-    const user = userCredential.user;
+    const { data: authData, error: authError } =
+      await supabaseClient.auth.signUp({
+        email: email,
+        password: password,
+      });
 
-    await db.collection("Users").doc(user.uid).set({
+    if (authError) {
+      console.error("Auth error:", authError);
+      return { success: false, error: authError.message };
+    }
+
+    const user = authData.user;
+
+    const { error: insertError } = await supabaseClient.from("Users").insert({
+      uuid: user.id,
       email: email,
       username: username,
-      studentid: "",
+      verified: false,
     });
 
-    return { success: true, user: user };
+    if (insertError) {
+      console.error("User profile creation error:", insertError);
+
+      try {
+        await supabaseClient.from("Users").insert({
+          uuid: user.id,
+          email: email,
+          username: username + "_failed_" + Date.now(),
+        });
+      } catch (cleanupError) {
+        console.error("Cleanup also failed:", cleanupError);
+      }
+
+      return {
+        success: false,
+        error: "Account creation failed. Please try again.",
+      };
+    }
+
+    return {
+      success: true,
+      user: user,
+      message:
+        "Account created successfully! Please check your email to verify your account.",
+    };
   } catch (error) {
-    console.error("Signup error:", error.message);
-    return { success: false, error: error.message };
+    console.error("Signup error:", error);
+    return {
+      success: false,
+      error: "An unexpected error occurred. Please try again.",
+    };
   }
 }
 

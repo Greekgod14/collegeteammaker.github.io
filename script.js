@@ -189,10 +189,15 @@ async function displayStudents() {
     container.innerHTML = '';
     
     try {
-        const db = firebase.firestore();
-        const membersSnapshot = await db.collection('members').get();
+        const supabaseUrl = 'YOUR_SUPABASE_URL';
+        const supabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY';
+        const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
         
-        if (membersSnapshot.empty) {
+        const { data: members, error } = await supabase
+            .from('members')
+            .select('*');
+        
+        if (error || !members || members.length === 0) {
             container.innerHTML = '<div class="no-students">No students found</div>';
             return [];
         }
@@ -200,8 +205,8 @@ async function displayStudents() {
         allStudents = [];
         const branchGroups = {};
         
-        membersSnapshot.forEach(doc => {
-            const studentData = doc.data();
+        members.forEach(member => {
+            const studentData = member;
             const branch = studentData.department;
             
             if (!branchGroups[branch]) {
@@ -210,7 +215,7 @@ async function displayStudents() {
             
             const studentWithId = {
                 ...studentData,
-                id: doc.id,
+                id: member.id,
                 display: `${studentData.name} | ${studentData.admissionNumber} | ${studentData.section} | ${studentData.department}`
             };
             

@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Management - College Team Maker</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Cinzel:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      :root {
+        --primary: #667eea;
+        --secondary: #764ba2;
+        --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --text-dark: #333;
+        --text-light: #666;
+        --bg-light: #f5f7fa;
+        --white: #fff;
+        --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        --radius: 12px;
+        --success: #27ae60;
+        --warning: #f39c12;
+        --danger: #e74c3c;
+      }
+      body {
+        font-family: "Noto Sans JP", sans-serif;
+        background: var(--bg-light);
+        padding: 20px;
+      }
+      .card {
+        background: var(--white);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #eee;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .card-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-dark);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      /* Toolbar */
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 20px;
+        align-items: center;
+      }
+      .search-box {
+        flex: 1;
+        min-width: 200px;
+        position: relative;
+      }
+      .search-box input {
+        width: 100%;
+        padding: 12px 15px 12px 40px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 14px;
+      }
+      .search-box input:focus {
+        outline: none;
+        border-color: var(--primary);
+      }
+      .search-box::before {
+        content: "🔍";
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+      .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 10px;
+        font-family: "Noto Sans JP", sans-serif;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .btn-primary {
+        background: var(--gradient);
+        color: var(--white);
+      }
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+      }
+      .btn-secondary {
+        background: var(--bg-light);
+        color: var(--text-dark);
+      }
+      .btn-success {
+        background: var(--success);
+        color: var(--white);
+      }
+      .btn-danger {
+        background: var(--danger);
+        color: var(--white);
+      }
+      .btn-sm {
+        padding: 6px 12px;
+        font-size: 12px;
+      }
+      /* Filters */
+      .filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      .filter-select {
+        padding: 10px 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 13px;
+        background: var(--white);
+        min-width: 140px;
+        cursor: pointer;
+      }
+      .filter-select:focus {
+        outline: none;
+        border-color: var(--primary);
+      }
+      /* Bulk Actions */
+      .bulk-actions {
+        background: linear-gradient(
+          135deg,
+          rgba(102, 126, 234, 0.1),
+          rgba(118, 75, 162, 0.1)
+        );
+        padding: 12px 15px;
+        border-radius: 10px;
+        margin-bottom: 15px;
+        display: none;
+        align-items: center;
+        gap: 15px;
+        flex-wrap: wrap;
+      }
+      .bulk-actions.active {
+        display: flex;
+      }
+      .bulk-actions span {
+        font-size: 13px;
+        font-weight: 500;
+      }
+      /* Table */
+      .table-container {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 700px;
+      }
+      th,
+      td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+      }
+      th {
+        background: var(--bg-light);
+        font-weight: 600;
+        font-size: 13px;
+        color: var(--text-dark);
+        position: sticky;
+        top: 0;
+      }
+      th.sortable {
+        cursor: pointer;
+        user-select: none;
+      }
+      th.sortable:hover {
+        color: var(--primary);
+      }
+      td {
+        font-size: 14px;
+      }
+      tr:hover {
+        background: rgba(102, 126, 234, 0.03);
+      }
+      .checkbox-cell {
+        width: 40px;
+      }
+      .checkbox-cell input {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--primary);
+      }
+      .student-avatar {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        background: var(--gradient);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--white);
+        font-weight: 600;
+        font-size: 14px;
+      }
+      .student-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .student-name {
+        font-weight: 500;
+      }
+      .student-email {
+        font-size: 12px;
+        color: var(--text-light);
+      }
+      .badge {
+        padding: 4px 10px;
+        border-radius: 15px;
+        font-size: 11px;
+        font-weight: 500;
+      }
+      .badge-branch {
+        background: rgba(102, 126, 234, 0.1);
+        color: var(--primary);
+      }
+      .badge-captain {
+        background: var(--gradient);
+        color: var(--white);
+      }
+      .badge-unassigned {
+        background: #fff3cd;
+        color: #856404;
+      }
+      .badge-assigned {
+        background: #d4edda;
+        color: #155724;
+      }
+      .actions-cell {
+        display: flex;
+        gap: 5px;
+      }
+      /* Mobile Cards */
+      .mobile-cards {
+        display: none;
+      }
+      .student-card {
+        border: 2px solid #e0e0e0;
+        border-radius: var(--radius);
+        padding: 15px;
+        margin-bottom: 12px;
+      }
+      .student-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+      }
+      .student-card-body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        font-size: 13px;
+      }
+      .student-card-label {
+        color: var(--text-light);
+        font-size: 11px;
+      }
+      .student-card-actions {
+        margin-top: 12px;
+        display: flex;
+        gap: 8px;
+      }
+      /* Import Modal */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .modal-overlay.active {
+        display: flex;
+      }
+      .modal {
+        background: var(--white);
+        border-radius: var(--radius);
+        width: 100%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow: auto;
+      }
+      .modal-header {
+        padding: 20px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .modal-title {
+        font-size: 18px;
+        font-weight: 600;
+      }
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: var(--text-light);
+      }
+      .modal-body {
+        padding: 20px;
+      }
+      .modal-footer {
+        padding: 15px 20px;
+        border-top: 1px solid #eee;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+      /* Upload Area */
+      .upload-area {
+        border: 2px dashed #e0e0e0;
+        border-radius: 10px;
+        padding: 40px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+      .upload-area:hover,
+      .upload-area.dragover {
+        border-color: var(--primary);
+        background: rgba(102, 126, 234, 0.05);
+      }
+      .upload-area span {
+        font-size: 48px;
+        display: block;
+        margin-bottom: 15px;
+        opacity: 0.5;
+      }
+      .upload-area p {
+        color: var(--text-light);
+        margin-bottom: 10px;
+      }
+      .upload-area input {
+        display: none;
+      }
+      /* Form */
+      .form-group {
+        margin-bottom: 20px;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .form-control {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 14px;
+      }
+      .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+      }
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+      }
+      /* Stats */
+      .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+      .stat-card {
+        background: linear-gradient(
+          135deg,
+          rgba(102, 126, 234, 0.1),
+          rgba(118, 75, 162, 0.1)
+        );
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+      }
+      .stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--primary);
+      }
+      .stat-label {
+        font-size: 12px;
+        color: var(--text-light);
+      }
+      /* Pagination */
+      .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        margin-top: 20px;
+        flex-wrap: wrap;
+      }
+      .page-btn {
+        width: 36px;
+        height: 36px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        background: var(--white);
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 14px;
+      }
+      .page-btn:hover,
+      .page-btn.active {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+      .page-btn.active {
+        background: var(--gradient);
+        color: var(--white);
+      }
+      @media (max-width: 768px) {
+        .table-container {
+          display: none;
+        }
+        .mobile-cards {
+          display: block;
+        }
+        .form-row {
+          grid-template-columns: 1fr;
+        }
+        .filter-row {
+          flex-direction: column;
+        }
+        .filter-select {
+          width: 100%;
+        }
+      }
+      .loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--bg-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      }
+      .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid var(--primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-value" id="totalStudents">156</div>
+        <div class="stat-label">Total Students</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="assignedStudents">144</div>
+        <div class="stat-label">Assigned</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="unassignedStudents">12</div>
+        <div class="stat-label">Unassigned</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="captainCount">15</div>
+        <div class="stat-label">Captains</div>
+      </div>
+    </div>
+
+    <!-- Student Management -->
+    <section class="card" data-section="studentManagement">
+      <div class="card-header">
+        <h3 class="card-title"> Student Database</h3>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap">
+          <!-- <button class="btn btn-secondary" onclick="openImportModal()">📥 Import</button>
+                <button class="btn btn-secondary">📤 Export</button> -->
+         <button class="btn btn-primary" onclick="clearAddModalForm(); openAddModal()">Add Student</button>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-box">
+          <input
+            type="text"
+            id="studentSearch"
+            placeholder="Search by name, ID, or email..."
+            aria-label="Search students"
+          />
+        </div>
+      </div>
+
+      <div class="filter-row">
+      <select class="filter-select" id="filterBranch" aria-label="Filter by branch">
+    <option value="">All Branches</option>
+    <option value="CSE">CSE</option>
+    <option value="CSE(IoT)">CSE(IoT)</option>
+    <option value="CSE(DS)">CSE(DS)</option>
+    <option value="CSE(ISE)">CSE(ISE)</option>
+    <option value="CSE(AI/ML)">CSE(AI/ML)</option>
+    <option value="ECE">ECE</option>
+    <option value="ME">ME</option>
+</select>
+       <select class="filter-select" id="filterSection" aria-label="Filter by section">
+    <option value="">All Sections</option>
+    <option value="A">A</option>
+    <option value="B">B</option>
+    <option value="C">C</option>
+    <option value="D">D</option>
+    <option value="E">E</option>
+    <option value="F">F</option>
+    <option value="G">G</option>
+</select>
+        <select
+          class="filter-select"
+          id="filterGender"
+          aria-label="Filter by gender"
+        >
+          <option value="">All Genders</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+          <option value="other">Other</option>
+        </select>
+        <select
+          class="filter-select"
+          id="filterStatus"
+          aria-label="Filter by status"
+        >
+          <option value="">All Status</option>
+          <option value="assigned">Assigned</option>
+          <option value="unassigned">Unassigned</option>
+          <option value="captain">Captains</option>
+        </select>
+      </div>
+      <!-- 
+        <div class="bulk-actions" id="bulkActions">
+            <span id="selectedCount">0 selected</span>
+            <button class="btn btn-sm btn-secondary">📤 Export Selected</button>
+            <button class="btn btn-sm btn-primary">👥 Assign to Team</button>
+            <button class="btn btn-sm btn-success">⭐ Make Captain</button>
+            <button class="btn btn-sm btn-danger">🗑️ Delete</button>
+        </div> -->
+
+      <!-- Desktop Table -->
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th class="sortable">Student ↕</th>
+              <th class="sortable">Admission No ↕</th>
+              <th class="sortable">Branch ↕</th>
+              <th>Section</th>
+              <th>Gender</th>
+              <th>Team</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="studentTableBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Mobile Cards -->
+      <div class="mobile-cards" id="mobileCards"></div>
+
+      <div class="pagination">
+        <button class="page-btn">←</button>
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">3</button>
+        <button class="page-btn">...</button>
+        <button class="page-btn">10</button>
+        <button class="page-btn">→</button>
+      </div>
+    </section>
+
+    <!-- Import Modal -->
+    <div class="modal-overlay" id="importModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 class="modal-title">Import Students</h3>
+          <button class="modal-close" onclick="closeImportModal()">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="upload-area" id="uploadArea">
+            <span>📄</span>
+            <p><strong>Drop CSV/Excel file here</strong></p>
+            <p>or click to browse</p>
+            <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" />
+          </div>
+          <div
+            style="
+              margin-top: 20px;
+              padding: 15px;
+              background: var(--bg-light);
+              border-radius: 10px;
+            "
+          >
+            <strong style="font-size: 13px">Required columns:</strong>
+            <p
+              style="font-size: 12px; color: var(--text-light); margin-top: 5px"
+            >
+              Name, Admission Number, Email, Branch, Section, Gender, Date of
+              Birth
+            </p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeImportModal()">
+            Cancel
+          </button>
+          <button class="btn btn-primary">Import</button>
+        </div>
+      </div>
+    </div>
+
+  <!-- Add/Edit Modal -->
+<div class="modal-overlay" id="addModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title" id="addModalTitle">Add Student</h3>
+            <button class="modal-close" onclick="closeAddModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="studentName" class="form-control" placeholder="Enter full name">
+                </div>
+                <div class="form-group">
+                    <label>Admission Number</label>
+                    <input type="text" id="admissionNumber" class="form-control" placeholder="e.g., 0214">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Branch</label>
+                    <select class="form-control" id="department" required>
+                        <option value="">Select Department</option>
+                        <option value="CSE">CSE</option>
+                        <option value="CSE(IoT)">CSE(IoT)</option>
+                        <option value="CSE(DS)">CSE(DS)</option>
+                        <option value="CSE(ISE)">CSE(ISE)</option>
+                        <option value="CSE(AI/ML)">CSE(AI/ML)</option>
+                        <option value="ECE">ECE</option>
+                        <option value="ME">ME</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Section</label>
+                    <select class="form-control" id="section" required>
+                        <option value="">Select Section</option>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="D">D</option>
+                        <option value="E">E</option>
+                        <option value="F">F</option>
+                        <option value="G">G</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Gender</label>
+                    <select class="form-control" id="gender">
+                        <option value="M">Male</option>
+                        <option value="F">Female</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeAddModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveStudent()">Save Student</button>
+        </div>
+    </div>
+</div>
+      </div>
+    </div>
+    <div class="loading-screen" id="loadingScreen">
+    <div class="loading-spinner"></div>
+</div>
+    <script src="../firestore.js"></script>
+
+    <script src="scripts/student-manage.js"></script>
+
+  </body>
+</html>

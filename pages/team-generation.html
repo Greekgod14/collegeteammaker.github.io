@@ -8,9 +8,7 @@
       href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Cinzel:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
       * {
@@ -567,8 +565,8 @@
         document.querySelectorAll('input').forEach(input => input.addEventListener('change', updateSummary));
         updateSummary();
     </script> -->
+    <script src="../firestore.js"></script>
 
     <script src="scripts/teamgen.js"></script>
-    <script src="../firestore.js"></script>
   </body>
 </html>

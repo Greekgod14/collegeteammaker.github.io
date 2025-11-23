@@ -1,6 +1,6 @@
 let generatedTeams = [];
 let allStudents = [];
-
+const supabase = window.supabase;
 document.addEventListener("DOMContentLoaded", function () {
   loadStudents();
   setupEventListeners();
@@ -38,14 +38,21 @@ function setupEventListeners() {
 async function loadStudents() {
   try {
     showLoading(true);
-    
-    const db = firebase.firestore();
-    const snapshot = await db.collection("members").get();
 
-    allStudents = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const { data: students, error } = await supabase
+      .from("members")
+      .select("*");
+
+    if (error) {
+      throw error;
+    }
+
+    allStudents = students
+      ? students.map((student) => ({
+          id: student.id,
+          ...student,
+        }))
+      : [];
 
     updateSummary();
     console.log(`Loaded ${allStudents.length} students`);
@@ -53,25 +60,22 @@ async function loadStudents() {
     console.error("Error loading students:", error);
     alert("Error loading student data");
   } finally {
-    
     showLoading(false);
   }
 }
 
 function showLoading(show) {
-  const loadingIndicator = document.getElementById('loadingIndicator');
-  const teamPreviewContainer = document.getElementById('teamPreviewContainer');
-  
+  const loadingIndicator = document.getElementById("loadingIndicator");
+  const teamPreviewContainer = document.getElementById("teamPreviewContainer");
+
   if (show) {
-    loadingIndicator.style.display = 'block';
-    teamPreviewContainer.style.display = 'none';
+    loadingIndicator.style.display = "block";
+    teamPreviewContainer.style.display = "none";
   } else {
-    loadingIndicator.style.display = 'none';
-    teamPreviewContainer.style.display = 'block';
+    loadingIndicator.style.display = "none";
+    teamPreviewContainer.style.display = "block";
   }
 }
-
-
 
 function generateTeams() {
   if (allStudents.length === 0) {
@@ -533,61 +537,85 @@ async function publishTeams() {
     return;
   }
 
-  if (
-    !confirm(
-      `Publish ${generatedTeams.length} teams to students? This will assign team numbers to all students.`
-    )
-  ) {
+  if (!confirm(`Publish ${generatedTeams.length} teams to students?`)) {
     return;
   }
 
   try {
-    const db = firebase.firestore();
-    const batch = db.batch();
+    console.log("Clearing existing team assignments...");
+    
+  const publishBtn = document.getElementById("publishBtn");
+    const originalText = publishBtn.textContent;
+    publishBtn.textContent = "Publishing...";
+    publishBtn.disabled = true;
 
-    const existingTeams = await db.collection("Teams").get();
-    existingTeams.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
+    console.log("Clearing existing team assignments...");
+        const { error: clearError } = await supabase
+      .from("members")
+      .update({ teamId: null })
+      .not("teamId", "is", null);
 
-    generatedTeams.forEach((team) => {
-      const teamRef = db.collection("Teams").doc(team.id.toString());
-      const teamData = {
-        ...team,
-        published: true,
-        publishedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        members: team.members.map((m) => m.id),
-        captain: team.captain,
-      };
-      batch.set(teamRef, teamData);
-    });
+    if (clearError) {
+      throw clearError;
+    }
 
+    console.log("Deleting existing teams...");
+    // THEN: Delete teams (now no foreign key constraints)
+    const { error: deleteError } = await supabase
+      .from("Teams")
+      .delete()
+      .gte("id", 0);
+
+    if (deleteError) {
+      throw deleteError;
+    }
+
+    console.log("Inserting new teams...");
+    const teamsToInsert = generatedTeams.map((team) => ({
+      id: team.id.toString(),
+      name: team.name,
+      members: team.members.map((m) => m.id),
+      captain: team.captain,
+    }));
+
+    const { data, error: insertError } = await supabase
+      .from("Teams")
+      .insert(teamsToInsert);
+
+    if (insertError) {
+      throw insertError;
+    }
+
+    console.log("Updating student team assignments...");
     const studentUpdates = [];
-    generatedTeams.forEach((team) => {
-      team.members.forEach((member) => {
-        const studentRef = db.collection("members").doc(member.id);
+    for (const team of generatedTeams) {
+      for (const member of team.members) {
         studentUpdates.push(
-          studentRef.update({
-            teamId: team.id,
-            teamName: team.name,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          })
+          supabase
+            .from("members")
+            .update({ teamId: team.id })
+            .eq("id", member.id)
         );
-      });
-    });
-
-    await batch.commit();
+      }
+    }
+    
     await Promise.all(studentUpdates);
+    console.log("All student updates completed");
 
+    // SUCCESS
     alert(`Successfully published ${generatedTeams.length} teams!`);
+         publishBtn.textContent = originalText;
 
     document.getElementById("publishBtn").disabled = true;
     displayTeamPreview(
       generatedTeams.map((team) => ({ ...team, published: true }))
     );
+    
   } catch (error) {
     console.error("Error publishing teams:", error);
-    alert("Error publishing teams. Please try again.");
+     publishBtn.textContent = originalText;
+    publishBtn.disabled = false;
+      alert("Error publishing teams. Please try again.");
   }
 }
 
@@ -652,7 +680,6 @@ function closeCaptainEditor() {
   modal.style.display = "none";
 }
 
-
 async function loadCaptainEditor() {
   if (allStudents.length === 0) {
     showLoading(true);
@@ -664,46 +691,54 @@ async function loadCaptainEditor() {
     }, 1000);
     return;
   }
-  
+
   loadCaptainEditorContent();
 }
 
 function loadCaptainEditorContent() {
-  const currentCaptains = allStudents.filter(s => s.isCaptain === true);
-  const currentCaptainsList = document.getElementById('currentCaptainsList');
-  
+  const currentCaptains = allStudents.filter((s) => s.isCaptain === true);
+  const currentCaptainsList = document.getElementById("currentCaptainsList");
+
   if (currentCaptains.length === 0) {
-    currentCaptainsList.innerHTML = '<p style="color: #666; font-style: italic;">No captains yet</p>';
+    currentCaptainsList.innerHTML =
+      '<p style="color: #666; font-style: italic;">No captains yet</p>';
   } else {
-    currentCaptainsList.innerHTML = currentCaptains.map(student => {
-      const genderSymbol = getGenderSymbol(student.gender);
-      const genderColor = getGenderColor(student.gender);
-      
-      return `
+    currentCaptainsList.innerHTML = currentCaptains
+      .map((student) => {
+        const genderSymbol = getGenderSymbol(student.gender);
+        const genderColor = getGenderColor(student.gender);
+
+        return `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee;">
           <div>
             <div style="font-weight: 500;">${student.name}</div>
             <div style="font-size: 12px; color: #666;">
               <span style="color: ${genderColor}; font-weight: bold;">${genderSymbol}</span> • 
-              ${student.department || 'Unknown'}
+              ${student.department || "Unknown"}
             </div>
           </div>
-          <button class="btn" onclick="removeCaptain('${student.id}')" style="background: #e74c3c; color: white; padding: 4px 8px; font-size: 12px;">Remove</button>
+          <button class="btn" onclick="removeCaptain('${
+            student.id
+          }')" style="background: #e74c3c; color: white; padding: 4px 8px; font-size: 12px;">Remove</button>
         </div>
       `;
-    }).join('');
+      })
+      .join("");
   }
 
   const nonCaptains = allStudents
-    .filter(s => s.isCaptain !== true)
+    .filter((s) => s.isCaptain !== true)
     .sort((a, b) => a.name.localeCompare(b.name));
-  
-  const studentSelect = document.getElementById('studentSelect');
-  studentSelect.innerHTML = '<option value="">Select a student...</option>' + 
-    nonCaptains.map(student => {
-      const genderSymbol = getGenderSymbol(student.gender);
-      return `<option value="${student.id}">${student.name} (${student.department}) ${genderSymbol}</option>`;
-    }).join('');
+
+  const studentSelect = document.getElementById("studentSelect");
+  studentSelect.innerHTML =
+    '<option value="">Select a student...</option>' +
+    nonCaptains
+      .map((student) => {
+        const genderSymbol = getGenderSymbol(student.gender);
+        return `<option value="${student.id}">${student.name} (${student.department}) ${genderSymbol}</option>`;
+      })
+      .join("");
 }
 
 function addNewCaptain() {
@@ -727,12 +762,12 @@ function addNewCaptain() {
 // document.getElementById("captainModal").innerHTML = `
 //   <div style="background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto;">
 //     <h3 style="margin-bottom: 15px;">Edit Captains</h3>
-    
+
 //     <div style="margin-bottom: 15px;">
 //       <h4>Current Captains:</h4>
 //       <div id="currentCaptainsList" style="margin: 10px 0;"></div>
 //     </div>
-    
+
 //     <div style="margin-bottom: 15px;">
 //       <h4>Make New Captain:</h4>
 //       <select id="studentSelect" class="form-control" style="margin-bottom: 10px;">
@@ -740,7 +775,7 @@ function addNewCaptain() {
 //       </select>
 //       <button class="btn btn-primary" id="addCaptainBtn" style="width: 100%;">Add as Captain</button>
 //     </div>
-    
+
 //     <div class="btn-group" style="margin-top: 20px; display: flex; justify-content: space-between;">
 //       <button class="btn btn-secondary" id="closeModalBtn">Cancel</button>
 //       <button class="btn btn-success" id="saveCaptainsBtn">Save Changes</button>
@@ -785,18 +820,17 @@ function removeCaptain(studentId) {
 
 async function saveCaptainChanges() {
   try {
-    const db = firebase.firestore();
-    const batch = db.batch();
+    const now = new Date().toISOString();
 
-    allStudents.forEach((student) => {
-      const studentRef = db.collection("members").doc(student.id);
-      batch.update(studentRef, {
-        isCaptain: student.isCaptain === true,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      });
-    });
-
-    await batch.commit();
+    for (const student of allStudents) {
+      await supabase
+        .from("members")
+        .update({
+          isCaptain: student.isCaptain === true,
+          updatedAt: now,
+        })
+        .eq("id", student.id);
+    }
     alert("Captain changes saved successfully!");
     closeCaptainEditor();
 
@@ -806,4 +840,3 @@ async function saveCaptainChanges() {
     alert("Error saving changes. Please try again.");
   }
 }
-

@@ -12,7 +12,7 @@ if (!currentUser) {
     window.location.href = "dashboard.html";
   } else {
     if (!hasCompletedSecondStep) {
-      window.location.href = "index.html";} 
+      window.location.href = "dashboard.html";} 
       else{
       document.getElementById(
         "welcomeMessage"
@@ -21,7 +21,7 @@ if (!currentUser) {
   }
 }
 
-function logout() {
+async function logout() {
     localStorage.removeItem('currentUser');
     Object.keys(localStorage).forEach(key => {
         if (key.startsWith('user_')) {
@@ -29,7 +29,7 @@ function logout() {
         }
     });
     
-    firebase.auth().signOut();
+    await window.supabase.auth.signOut();
     
     window.location.href = 'login.html';
     
@@ -47,13 +47,14 @@ async function handleSubmitInfo(event) {
     const genderCode = gender === 'male' ? 'M' : 'F';
     
     try {
-        const db = firebase.firestore();
         
-        const memberSnapshot = await db.collection('members')
-            .where('admissionNumber', '==', admissionNumber)
-            .get();
+        const { data: members, error: queryError } = await window.supabase
+            .from('members')
+            .select('*')
+            .eq('admissionNumber', admissionNumber)
+            .limit(1);
         
-        if (memberSnapshot.empty) {
+        if (queryError || !members || members.length === 0) {
             showMessage('Cannot find member with this admission number. Please check your information.', true);
             setTimeout(() => {
                 localStorage.clear();
@@ -62,9 +63,7 @@ async function handleSubmitInfo(event) {
             return;
         }
         
-        const memberDoc = memberSnapshot.docs[0];
-        const memberData = memberDoc.data();
-        const memberId = memberDoc.id;
+        const memberData = members[0];
         
         const detailsMatch = 
             memberData.section === section &&
@@ -83,17 +82,27 @@ async function handleSubmitInfo(event) {
         const confirmed = confirm(`Is this you?\n\nAdmission: ${memberData.admissionNumber}\nName: ${memberData.name}\nSection: ${memberData.section}\nDepartment: ${memberData.department}\nGender: ${memberData.gender}\n\nClick OK to confirm, Cancel if this is not you.`);
         
         if (confirmed) {
-            const auth = firebase.auth();
-            const currentUser = auth.currentUser;
+            const { data: { user: currentUser } } = await window.supabase.auth.getUser();
             
-            await db.collection('Users').doc(currentUser.uid).update({
-                admissionNumber: admissionNumber
-            });
+            if (!currentUser) {
+                showMessage('User not authenticated', true);
+                return;
+            }
+            
+            const { error: updateError } = await supabase
+                .from('Users')
+                .update({ admissionNumber: admissionNumber , verified: true })
+                .eq('uuid', currentUser.id);
+            
+            if (updateError) {
+                showMessage('Error updating user: ' + updateError.message, true);
+                return;
+            }
             
             showMessage('Member verification successful! Redirecting...', false);
             onSecondStepComplete();
             setTimeout(() => {
-                window.location.href = 'index.html';
+                window.location.href = 'dashboard.html';
             }, 2000);
             
         } else {
@@ -139,23 +148,25 @@ function showMessage(message, isError) {
 }
 
 
-function onSecondStepComplete() {
+async function onSecondStepComplete() {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     
-    // Update the flag
     currentUser.completedSecondStep = false;
-    currentUser.admissionNumber = "someNumber"; // add the admission number
+    currentUser.admissionNumber = "someNumber"; 
     
-    // Save back to localStorage
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
     
-    // Also update Firestore if needed
-    const user = firebase.auth().currentUser;
-    const db = firebase.firestore();
-    db.collection('Users').doc(user.uid).update({
-        admissionNumber: "someNumber",
-        memberVerified: true
-    });
+    const { data: { user } } = await window.supabase.auth.getUser();
+    
+    if (user) {
+        await supabase
+            .from('Users')
+            .update({
+                admissionNumber: "someNumber",
+                verified: true
+            })
+            .eq('uuid', user.id);
+    }
 }
 
 document.getElementById('infoForm').addEventListener('submit', handleSubmitInfo);

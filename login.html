@@ -4,16 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login - College Team Maker</title>
-    <link rel="stylesheet" href="login-style.css" />
     <link
       href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=M+PLUS+1p:wght@300;400;500;700&family=Cinzel:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="style/login-style.css" id="theme-style" />
   </head>
   <body>
+    <button id="styleToggle" class="style-toggle-btn">Switch Style</button>
+
     <!-- Temple Gate Animation -->
     <div class="temple-gate" id="templeGate">
       <div class="gate-pillar left"></div>
@@ -37,81 +37,86 @@
     </div>
 
     <div class="login-container">
-      <div class="login-header" id="loginHeader">
-        <h1 id="headerTitle">Login</h1>
-      </div>
-
-      <div class="login-form" id="loginForm">
-                <label id="errorLabel" class="error-label"></label>
-
-        <div class="form-group">
-          <label for="username">Username</label>
-          <input
-            type="text"
-            id="username"
-            placeholder="Enter username"
-            required
-          />
-        </div>
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input
-            type="password"
-            id="password"
-            placeholder="Enter password"
-            required
-          />
+      <div class="info-container">
+        <div class="info-header">
+          <h1 id="headerTitle">Login</h1>
+          <p id="welcomeMessage">ログイン - Please login to your account</p>
         </div>
 
-        <button type="submit" id="loginBtn" class="login-btn">Login</button>
+        <form id="loginForm">
+          <label id="errorLabel" class="error-label"></label>
 
-        <div class="form-links">
-          <a href="#" id="showSignupLink">Sign Up</a>
-        </div>
-      </div>
+          <div class="form-group">
+            <label for="username">Username</label>
+            <input
+              type="text"
+              id="username"
+              placeholder="Enter username"
+              required
+            />
+          </div>
 
-      <div class="signup-form" id="signupForm" style="display: none">
-        <label id="errorLabel" class="error-label"></label>
-        <div class="form-group">
-          <label for="newUsername">Username</label>
-          <input
-            type="text"
-            id="newUsername"
-            placeholder="Choose username"
-            required
-          />
-        </div>
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input
+              type="password"
+              id="password"
+              placeholder="Enter password"
+              required
+            />
+          </div>
 
-        <div class="form-group">
-          <label for="email">Email</label>
-          <input type="email" id="email" placeholder="Enter email" required />
-        </div>
+          <button type="submit" id="loginBtn" class="submit-btn">Login</button>
 
-        <div class="form-group">
-          <label for="newPassword">Password</label>
-          <input
-            type="password"
-            id="newPassword"
-            placeholder="Choose password"
-            required
-          />
-        </div>
+          <div class="form-links">
+            <a href="#" id="showSignupLink">Sign Up</a>
+          </div>
+        </form>
 
-        <div class="form-group">
-          <label for="confirmPassword">Confirm Password</label>
-          <input
-            type="password"
-            id="confirmPassword"
-            placeholder="Confirm password"
-            required
-          />
-        </div>
+        <form id="signupForm" style="display: none">
+          <label id="errorLabelSignup" class="error-label"></label>
 
-        <button type="submit" id="signupBtn" class="signup-btn">Sign Up</button>
+          <div class="form-group">
+            <label for="newUsername">Username</label>
+            <input
+              type="text"
+              id="newUsername"
+              placeholder="Choose username"
+              required
+            />
+          </div>
 
-        <div class="form-links">
-          <a href="#" id="showLoginLink">Back to Login</a>
-        </div>
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="Enter email" required />
+          </div>
+
+          <div class="form-group">
+            <label for="newPassword">Password</label>
+            <input
+              type="password"
+              id="newPassword"
+              placeholder="Choose password"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="confirmPassword">Confirm Password</label>
+            <input
+              type="password"
+              id="confirmPassword"
+              placeholder="Confirm password"
+              required
+            />
+          </div>
+
+          <button type="submit" id="signupBtn" class="submit-btn">Sign Up</button>
+
+          <div class="form-links">
+            <a href="#" id="showLoginLink">Back to Login</a>
+          </div>
+        </form>
       </div>
     </div>
 
@@ -134,7 +139,7 @@
       >
     </div>
 
-    <script type="module" src="login-script.js"></script>
-    <script type="module" src="firestore.js"></script>
+    <script src="firestore.js"></script>
+    <script src="login-script.js"></script>
   </body>
 </html>

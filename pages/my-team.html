@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Team - College Team Maker</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Cinzel:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      :root {
+        --primary: #667eea;
+        --secondary: #764ba2;
+        --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --text-dark: #333;
+        --text-light: #666;
+        --bg-light: #f5f7fa;
+        --white: #fff;
+        --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        --radius: 12px;
+        --success: #27ae60;
+        --warning: #f39c12;
+        --danger: #e74c3c;
+      }
+      body {
+        font-family: "Noto Sans JP", sans-serif;
+        background: var(--bg-light);
+        padding: 20px;
+      }
+      .card {
+        background: var(--white);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #eee;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .card-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-dark);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      /* Team Header */
+      .team-header {
+        background: var(--gradient);
+        color: var(--white);
+        padding: 30px;
+        border-radius: var(--radius);
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .team-header-icon {
+        font-size: 48px;
+        margin-bottom: 15px;
+      }
+      .team-name-display {
+        font-family: "Cinzel", serif;
+        font-size: 28px;
+        margin-bottom: 5px;
+      }
+      .team-name-input {
+        font-family: "Cinzel", serif;
+        font-size: 28px;
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 10px;
+        color: var(--white);
+        padding: 8px 15px;
+        text-align: center;
+        width: 100%;
+        max-width: 300px;
+      }
+      .team-name-input::placeholder {
+        color: rgba(255, 255, 255, 0.7);
+      }
+      .team-name-input:focus {
+        outline: none;
+        border-color: var(--white);
+        background: rgba(255, 255, 255, 0.3);
+      }
+      .team-subtitle {
+        font-size: 14px;
+        opacity: 0.9;
+        margin-top: 10px;
+      }
+      .team-code {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 8px 20px;
+        border-radius: 20px;
+        margin-top: 15px;
+        font-family: monospace;
+        font-size: 16px;
+      }
+      /* Form */
+      .form-group {
+        margin-bottom: 20px;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .form-control {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-family: inherit;
+        font-size: 14px;
+        transition: all 0.3s;
+      }
+      .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+      }
+      textarea.form-control {
+        resize: vertical;
+        min-height: 100px;
+      }
+      /* Buttons */
+      .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 10px;
+        font-family: inherit;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .btn-primary {
+        background: var(--gradient);
+        color: var(--white);
+      }
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+      }
+      .btn-secondary {
+        background: var(--bg-light);
+        color: var(--text-dark);
+      }
+      .btn-sm {
+        padding: 8px 14px;
+        font-size: 12px;
+      }
+      /* Member List */
+      .member-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 15px;
+      }
+      .member-card {
+        border: 2px solid #e0e0e0;
+        border-radius: var(--radius);
+        padding: 15px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        transition: all 0.3s;
+      }
+      .member-card:hover {
+        border-color: var(--primary);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+      }
+      .member-card.captain {
+        border-color: var(--primary);
+        background: linear-gradient(
+          135deg,
+          rgba(102, 126, 234, 0.05),
+          rgba(118, 75, 162, 0.05)
+        );
+      }
+
+      .member-info {
+        flex: 1;
+      }
+      .member-name {
+        font-weight: 600;
+        font-size: 15px;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .member-role {
+        font-size: 12px;
+        color: var(--text-light);
+      }
+      .member-contact {
+        font-size: 12px;
+        color: var(--primary);
+        margin-top: 6px;
+      }
+      .badge {
+        padding: 3px 8px;
+        border-radius: 10px;
+        font-size: 10px;
+        font-weight: 600;
+      }
+      .badge-captain {
+        background: var(--gradient);
+        color: var(--white);
+      }
+      .badge-you {
+        background: var(--success);
+        color: var(--white);
+      }
+      .member-actions {
+        display: flex;
+        gap: 5px;
+      }
+      /* Stats */
+      .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+      .stat-item {
+        text-align: center;
+        padding: 15px;
+        background: var(--bg-light);
+        border-radius: 10px;
+      }
+      .stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--primary);
+      }
+      .stat-label {
+        font-size: 11px;
+        color: var(--text-light);
+        margin-top: 5px;
+      }
+      /* Chat/Announcements */
+      .chat-container {
+        max-height: 350px;
+        overflow-y: auto;
+      }
+      .chat-message {
+        display: flex;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid #f0f0f0;
+      }
+      .chat-message:last-child {
+        border-bottom: none;
+      }
+      .loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--bg-light);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      }
+      .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid var(--primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .empty-state {
+        padding: 40px 20px;
+        text-align: center;
+        color: #666;
+        font-style: italic;
+      }
+      .chat-content {
+        flex: 1;
+      }
+      .chat-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 4px;
+      }
+      .chat-name {
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .chat-time {
+        font-size: 11px;
+        color: var(--text-light);
+      }
+      .chat-text {
+        font-size: 13px;
+        color: var(--text-dark);
+        line-height: 1.5;
+      }
+      .chat-input-area {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #eee;
+      }
+      .chat-input-area input {
+        flex: 1;
+      }
+      /* Deadlines */
+      .deadline-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 15px;
+        background: var(--bg-light);
+        border-radius: 10px;
+        margin-bottom: 10px;
+      }
+      .deadline-item.urgent {
+        background: rgba(231, 76, 60, 0.1);
+        border-left: 3px solid var(--danger);
+      }
+      .deadline-item.upcoming {
+        background: rgba(243, 156, 18, 0.1);
+        border-left: 3px solid var(--warning);
+      }
+      .deadline-info h4 {
+        font-size: 14px;
+        margin-bottom: 4px;
+      }
+      .deadline-info span {
+        font-size: 12px;
+        color: var(--text-light);
+      }
+      .deadline-badge {
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-size: 11px;
+        font-weight: 500;
+      }
+      .deadline-badge.urgent {
+        background: var(--danger);
+        color: var(--white);
+      }
+      .deadline-badge.upcoming {
+        background: var(--warning);
+        color: var(--white);
+      }
+      .deadline-badge.normal {
+        background: var(--bg-light);
+        color: var(--text-dark);
+      }
+      /* Grid Layout */
+      .content-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+      }
+      @media (max-width: 600px) {
+        .team-name-display {
+          font-size: 22px;
+        }
+        .member-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body data-section="myTeam">
+    <div class="team-header">
+  <div class="team-name-section">
+    <input
+      type="text"
+      class="team-name-input"
+      id="teamNameInput"
+      placeholder="Enter team name"
+      aria-label="Team name"
+      disabled
+    />
+    <div id="teamNameButtons" style="display: none; margin-top: 10px; gap: 10px; justify-content: center;">
+      <button id="editTeamBtn" class="btn btn-sm btn-primary">Edit</button>
+      <button id="saveTeamBtn" class="btn btn-sm btn-success" style="display:none">Save</button>
+      <button id="cancelTeamBtn" class="btn btn-sm btn-secondary" style="display:none">Cancel</button>
+    </div>
+  </div>
+  <div class="team-subtitle" id="teamSubtitle">Loading members...</div>
+</div>
+    <div class="stats-row">
+      <div class="stat-item">
+        <div class="stat-value" id="memberCount">0</div>
+        <div class="stat-label">Members</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="taskCount">0</div>
+        <div class="stat-label">Tasks Done</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="maleCount">0</div>
+        <div class="stat-label">Male</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="femaleCount">0</div>
+        <div class="stat-label">Female</div>
+      </div>
+    </div>
+
+    <!-- Team Members -->
+    <section class="card">
+      <div class="card-header">
+        <h3 class="card-title">Team Members</h3>
+      </div>
+      <div class="member-grid" id="memberGrid">
+        <div
+          class="empty-state"
+          style="text-align: center; padding: 40px; color: #666"
+        >
+          Loading team members...
+        </div>
+      </div>
+    </section>
+
+    <div class="content-grid">
+      <!-- Announcements -->
+      <!-- Announcements -->
+      <!-- <section class="card">
+        <div class="card-header">
+          <h3 class="card-title">📢 Team Chat</h3>
+        </div>
+        <div class="chat-container" id="chatContainer">
+          <div
+            class="empty-state"
+            style="text-align: center; padding: 40px; color: #666"
+          >
+            No messages yet. Start a conversation!
+          </div>
+        </div>
+        <div class="chat-input-area">
+          <input
+            type="text"
+            class="form-control"
+            id="chatInput"
+            placeholder="Type a message..."
+            aria-label="Message input"
+          />
+          <button class="btn btn-primary" id="sendMessageBtn">Send</button>
+        </div>
+      </section> -->
+
+      <!-- Upcoming Deadlines -->
+      <section class="card">
+        <div class="card-header">
+          <h3 class="card-title"> Upcoming Deadlines</h3>
+        </div>
+        <div id="deadlinesList">
+          <div
+            class="empty-state"
+            style="text-align: center; padding: 40px; color: #666"
+          >
+            No upcoming deadlines
+          </div>
+        </div>
+      </section>
+    </div>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+      <div class="loading-spinner"></div>
+      <div style="margin-top: 20px; color: var(--primary); font-weight: 500">
+        Loading team details...
+      </div>
+    </div>
+  </body>
+
+      <script src="../firestore.js"></script>
+
+    <script src="scripts/myteam.js"></script>
+
+</html>
