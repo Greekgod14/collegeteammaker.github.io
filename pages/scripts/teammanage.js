@@ -288,14 +288,57 @@ function openTeamManagement(teamId) {
   document.getElementById("discardTeamChanges").onclick =
     closeTeamManagementModal;
 }
-
-function setAsCaptain(studentId) {
+async function setAsCaptain(studentId) {
   if (!currentEditingTeam) return;
+  console.log("Setting captain:", studentId, "Type:", typeof studentId);
+  
+  try {
+    if (currentEditingTeam.captain) {
+      const { error: removeCaptainError } = await supabase
+        .from("members")
+        .update({ 
+          isCaptain: false 
+        })
+        .eq("id", currentEditingTeam.captain);
 
-  currentEditingTeam.captain = studentId;
+      if (removeCaptainError) {
+        throw removeCaptainError;
+      }
+    }
 
-  openTeamManagement(currentEditingTeam.id);
+    const { error } = await supabase
+      .from("Teams")
+      .update({ 
+        captain: studentId 
+      })
+      .eq("id", currentEditingTeam.id);
+
+    if (error) {
+      throw error;
+    }
+
+    const { error: studentError } = await supabase
+      .from("members")
+      .update({ 
+        isCaptain: true 
+      })
+      .eq("id", studentId);
+
+    if (studentError) {
+      throw studentError;
+    }
+
+
+    currentEditingTeam.captain = studentId;
+
+    openTeamManagement(currentEditingTeam.id);
+    
+  } catch (error) {
+    console.error("Error setting captain:", error);
+    alert("Error setting captain. Please try again.");
+  }
 }
+
 
 function removeMemberFromTeam(studentId) {
   if (!currentEditingTeam) return;

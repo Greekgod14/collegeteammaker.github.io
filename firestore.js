@@ -246,6 +246,23 @@ function clearAuthData() {
   currentUserData = null;
 }
 
+window.logoutUser = async function() {
+  try {
+     localStorage.removeItem("currentUser");
+  Object.keys(localStorage).forEach((key) => {
+    if (key.startsWith("user_")) {
+      localStorage.removeItem(key);
+    }
+  });
+  currentUserData = null;
+
+await supabase.auth.signOut();
+    window.location.href = 'login.html';
+  } catch (error) {
+    console.error('Error logging out:', error);
+  }
+}
+
 function redirectToAllowedPage() {
   const defaultPage = getDefaultPageForUserType();
   const currentPage = getCurrentPage();

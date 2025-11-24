@@ -115,8 +115,8 @@ function displayTeamData() {
     
     const nameButtons = document.getElementById('teamNameButtons');
     if (isCaptain) {
-        nameButtons.style.display = 'flex';
-        setupTeamNameEditing();
+       // nameButtons.style.display = 'flex';
+       // setupTeamNameEditing();
     } else {
         nameButtons.style.display = 'none';
         document.getElementById('teamNameInput').disabled = true;

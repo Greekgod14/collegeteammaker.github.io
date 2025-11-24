@@ -142,22 +142,8 @@ function setUserRole(role) {
 
 async function logout() {
     try {
-        // Clear localStorage first
-        localStorage.removeItem('currentUser');
-        Object.keys(localStorage).forEach(key => {
-            if (key.startsWith('user_')) {
-                localStorage.removeItem(key);
-            }
-        });
-        
-        // Wait for Supabase signOut to complete
-        const { error } = await supabase.auth.signOut();
-        if (error) {
-            console.error('Error signing out:', error.message);
-            // Continue with redirect even if Supabase fails
-        }
-        
-        // Redirect after signOut completes
+
+  logoutUser();
         window.location.href = 'login.html';
         
     } catch (error) {
@@ -247,5 +233,7 @@ async function loadDashboardStats() {
 
     loadingElement.style.display = "none";
     statsContainer.style.display = "block";
+
+    window.href.location = window.href.location;
   }
 }
