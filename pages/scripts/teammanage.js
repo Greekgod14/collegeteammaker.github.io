@@ -68,14 +68,28 @@ function displayTeams() {
   if (allTeams.length === 0) {
     teamGrid.innerHTML = `
             <div class="empty-state">
-                <span>👥</span>
                 <p>No teams found. Generate teams first.</p>
             </div>
         `;
     return;
   }
 
-  teamGrid.innerHTML = allTeams
+   const sortedTeams = [...allTeams].sort((a, b) => {
+    const nameA = (a.name || `Team ${a.id}`).toLowerCase();
+    const nameB = (b.name || `Team ${b.id}`).toLowerCase();
+    
+    const numA = nameA.match(/\d+/);
+    const numB = nameB.match(/\d+/);
+    
+    if (numA && numB) {
+      return parseInt(numA[0]) - parseInt(numB[0]);
+    }
+    
+    return nameA.localeCompare(nameB);
+  });
+
+
+  teamGrid.innerHTML = sortedTeams
     .map((team) => {
       const maleCount = team.members
         ? team.members.filter((memberId) => {
@@ -173,9 +187,23 @@ function displayUnassignedStudents() {
 
 function filterTeams(query) {
   const teamCards = document.querySelectorAll(".team-card");
+  const searchTerm = query.toLowerCase();
+  
   teamCards.forEach((card) => {
     const teamName = card.querySelector(".team-name").textContent.toLowerCase();
-    if (teamName.includes(query)) {
+    const teamId = card.getAttribute("data-team-id");
+    const team = allTeams.find(t => t.id == teamId);
+    
+    let hasMatchingStudent = false;
+    
+    if (team && team.members) {
+      hasMatchingStudent = team.members.some(memberId => {
+        const student = allStudents.find(s => s.id === memberId);
+        return student && student.name.toLowerCase().includes(searchTerm);
+      });
+    }
+    
+    if (teamName.includes(searchTerm) || hasMatchingStudent) {
       card.style.display = "";
     } else {
       card.style.display = "none";
@@ -362,7 +390,7 @@ async function saveTeamChanges() {
           .from("members")
           .update({
             teamId: currentEditingTeam.id,
-            teamname: currentEditingTeam.name,
+            teamname: newTeamName,
             isCaptain: isCaptain,
           })
           .eq("id", memberId);

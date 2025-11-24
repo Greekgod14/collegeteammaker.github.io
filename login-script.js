@@ -74,7 +74,6 @@ async function login(username, password) {
     console.log("=== Login Attempt ===");
     console.log("Username:", username);
 
-    // Step 1: Query user by username
     const { data: users, error: queryError } = await supabase
       .from("Users")
       .select("*")
@@ -95,7 +94,6 @@ async function login(username, password) {
     const userEmail = userData.email;
     console.log("Found user email:", userEmail);
 
-    // Step 2: Authenticate with Supabase Auth
     const { data: authData, error: authError } =
       await supabase.auth.signInWithPassword({
         email: userEmail,
@@ -114,15 +112,12 @@ async function login(username, password) {
 
     console.log("Auth successful, user ID:", authData.user.id);
 
-    // Step 3: Ensure session is set
     console.log("Setting session...");
     await supabase.auth.setSession(authData.session);
-    
-    // Step 4: Wait for session to persist
+
     console.log("Waiting for session to persist...");
     await new Promise(resolve => setTimeout(resolve, 1500));
 
-    // Step 5: Store minimal user data in localStorage
     const userCacheData = {
       id: authData.user.id,
       uuid: authData.user.id,
@@ -168,7 +163,6 @@ async function handleLogin(e) {
     console.log("Login successful, showing animation...");
     showTempleGateAnimation();
     
-    // Wait for animation to complete, then trigger firestore redirect logic
     setTimeout(() => {
       console.log("Animation complete, initializing auth...");
       window.initializeAuth();
@@ -243,7 +237,6 @@ async function signup(email, password, username) {
   try {
     console.log("=== Signup Attempt ===");
 
-    // Step 1: Check if username exists
     const { data: existingUsers, error: queryError } = await window.supabase
       .from("Users")
       .select("id")
@@ -259,7 +252,6 @@ async function signup(email, password, username) {
       return { success: false, error: "Username already exists" };
     }
 
-    // Step 2: Create auth user
     console.log("Creating auth user...");
     const { data: authData, error: authError } =
       await window.supabase.auth.signUp({
@@ -280,7 +272,6 @@ async function signup(email, password, username) {
     const userId = authData.user.id;
     console.log("Auth user created:", userId);
 
-    // Step 3: Create user profile in database
     console.log("Creating user profile...");
     const { error: insertError } = await window.supabase
       .from("Users")
@@ -324,7 +315,6 @@ async function handleSignup(e) {
   const password = document.getElementById("newPassword").value;
   const confirmPassword = document.getElementById("confirmPassword").value;
 
-  // Validation
   if (!username || !email || !password || !confirmPassword) {
     showError("Please fill all fields", true);
     return;

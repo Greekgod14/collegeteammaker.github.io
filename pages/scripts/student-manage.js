@@ -129,7 +129,7 @@ function displayDesktopTable() {
 
   tableBody.innerHTML = paginatedStudents
     .map((student) => {
-const teamBadge = student.teamId ? 
+const teamBadge = student.teamid ? 
     `<span class="badge badge-assigned">${student.teamname || student.teamId}</span>` : 
     `<span class="badge badge-unassigned">Unassigned</span>`;
 

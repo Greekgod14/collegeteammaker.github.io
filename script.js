@@ -523,7 +523,6 @@ function displayTeams(teams, remainingStudents = []) {
         container.appendChild(teamDiv);
     });
     
-    // Display remaining students if any
     if (remainingStudents.length > 0) {
         const remainingDiv = document.createElement('div');
         remainingDiv.className = 'remaining-students';
@@ -551,8 +550,7 @@ function displayTeams(teams, remainingStudents = []) {
         
         container.appendChild(remainingDiv);
     }
-    
-    // Store teams globally for copying
+
     window.currentTeams = teams;
     window.currentRemaining = remainingStudents;
     

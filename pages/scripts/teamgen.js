@@ -1,9 +1,11 @@
 let generatedTeams = [];
 let allStudents = [];
 const supabase = window.supabase;
+
 document.addEventListener("DOMContentLoaded", function () {
   loadStudents();
   setupEventListeners();
+  setupCaptainModal(); // Add this line
 });
 
 function setupEventListeners() {
@@ -12,6 +14,7 @@ function setupEventListeners() {
     .addEventListener("click", generateTeams);
   document.getElementById("resetBtn").addEventListener("click", resetSettings);
   document.getElementById("publishBtn").addEventListener("click", publishTeams);
+  document.getElementById("editCaptainsBtn").addEventListener("click", openCaptainEditor); // Add this line
 
   const teamSizeSlider = document.getElementById("teamSize");
   const teamSizeValue = document.getElementById("teamSizeValue");
@@ -33,6 +36,13 @@ function setupEventListeners() {
   document.querySelectorAll("input, select").forEach((input) => {
     input.addEventListener("change", updateSummary);
   });
+}
+
+// Add this new function to set up captain modal
+function setupCaptainModal() {
+  document.getElementById("closeModalBtn").addEventListener("click", closeCaptainEditor);
+  document.getElementById("addCaptainBtn").addEventListener("click", addNewCaptain);
+  document.getElementById("saveCaptainsBtn").addEventListener("click", saveCaptainChanges);
 }
 
 async function loadStudents() {
@@ -247,86 +257,7 @@ function generateBalancedTeams(
 
   return teams;
 }
-// function generateBalancedTeams(teamSize, minMale, minFemale, mixBranches, mixSections) {
-//     const shuffledStudents = [...allStudents].sort(() => Math.random() - 0.5);
 
-//     const captains = shuffledStudents.filter(s => s.isCaptain === true);
-//     const regularStudents = shuffledStudents.filter(s => s.isCaptain !== true);
-
-//     console.log(`Found ${captains.length} existing captains`);
-
-//     if (captains.length === 0) {
-//         alert(' No captains found! Please mark some students as captains before generating teams.');
-//         return [];
-//     }
-
-//     const teams = captains.map((captain, index) => ({
-//         id: index + 1,
-//         name: `Team ${index + 1}`,
-//         members: [captain],
-//         captain: captain.id,
-//         published: false
-//     }));
-
-//     const teamCount = teams.length;
-
-//     const totalSlotsNeeded = teamCount * (teamSize - 1);
-//     if (regularStudents.length < totalSlotsNeeded) {
-//         alert(` Not enough regular students! Need ${totalSlotsNeeded} but only have ${regularStudents.length}. Teams will be incomplete.`);
-//     }
-
-//     const byGender = {
-//         male: regularStudents.filter(s => s.gender === "M"),
-//         female: regularStudents.filter(s => s.gender === "F"),
-//     };
-
-//     let teamIndex = 0;
-
-//     const genderGroups = [
-//         ...byGender.male,
-//         ...byGender.female,
-//         ...regularStudents.filter(s => s.gender !== 'M' && s.gender !== 'F')
-//     ];
-//         genderGroups.forEach(student => {
-//         let assigned = false;
-
-//         for (let i = 0; i < teams.length && !assigned; i++) {
-//             const checkTeam = teams[(teamIndex + i) % teams.length];
-
-//             if (checkTeam.members.length < teamSize) {
-//                 const maleCount = checkTeam.members.filter(m => m.gender === 'M').length;
-//                 const femaleCount = checkTeam.members.filter(m => m.gender === 'F').length;
-
-//                 const canAddMale = minMale === 0 || maleCount < minMale;
-//                 const canAddFemale = minFemale === 0 || femaleCount < minFemale;
-
-//                 if ((student.gender === 'M' && canAddMale) ||
-//                     (student.gender === 'F' && canAddFemale) ||
-//                     (student.gender !== 'M' && student.gender !== 'F')) {
-
-//                     checkTeam.members.push(student);
-//                     assigned = true;
-//                     break;
-//                 }
-//             }
-//         }
-
-//         if (!assigned) {
-//             for (let i = 0; i < teams.length; i++) {
-//                 const checkTeam = teams[(teamIndex + i) % teams.length];
-//                 if (checkTeam.members.length < teamSize) {
-//                     checkTeam.members.push(student);
-//                     assigned = true;
-//                     break;
-//                 }
-//             }
-//         }
-
-//         teamIndex = (teamIndex + 1) % teams.length;
-//     });
-
-//     return teams;
-// }
 function generateRandomTeams(teamSize) {
   const shuffledStudents = [...allStudents].sort(() => Math.random() - 0.5);
   const teamCount = Math.ceil(shuffledStudents.length / teamSize);
@@ -348,7 +279,6 @@ function generateRandomTeams(teamSize) {
   return teams;
 }
 
-// (placeholder)
 function generateSkillBasedTeams(teamSize) {
   alert("Skill-based team generation will be available in a future update");
   return generateBalancedTeams(teamSize, 0, 0, true, true);
@@ -363,6 +293,7 @@ function assignCaptains(teams, captainMethod) {
     return team;
   });
 }
+
 function displayTeamPreview(teams) {
   const container = document.getElementById("teamPreviewContainer");
 
@@ -544,15 +475,15 @@ async function publishTeams() {
   try {
     console.log("Clearing existing team assignments...");
     
-  const publishBtn = document.getElementById("publishBtn");
+    const publishBtn = document.getElementById("publishBtn");
     const originalText = publishBtn.textContent;
     publishBtn.textContent = "Publishing...";
     publishBtn.disabled = true;
 
     console.log("Clearing existing team assignments...");
-        const { error: clearError } = await supabase
+    const { error: clearError } = await supabase
       .from("members")
-      .update({ teamId: null })
+      .update({ teamId: null , teamname: null})
       .not("teamId", "is", null);
 
     if (clearError) {
@@ -560,7 +491,6 @@ async function publishTeams() {
     }
 
     console.log("Deleting existing teams...");
-    // THEN: Delete teams (now no foreign key constraints)
     const { error: deleteError } = await supabase
       .from("Teams")
       .delete()
@@ -593,7 +523,7 @@ async function publishTeams() {
         studentUpdates.push(
           supabase
             .from("members")
-            .update({ teamId: team.id })
+            .update({ teamId: team.id, teamname: team.name })
             .eq("id", member.id)
         );
       }
@@ -602,9 +532,8 @@ async function publishTeams() {
     await Promise.all(studentUpdates);
     console.log("All student updates completed");
 
-    // SUCCESS
     alert(`Successfully published ${generatedTeams.length} teams!`);
-         publishBtn.textContent = originalText;
+    publishBtn.textContent = originalText;
 
     document.getElementById("publishBtn").disabled = true;
     displayTeamPreview(
@@ -613,9 +542,9 @@ async function publishTeams() {
     
   } catch (error) {
     console.error("Error publishing teams:", error);
-     publishBtn.textContent = originalText;
+    publishBtn.textContent = originalText;
     publishBtn.disabled = false;
-      alert("Error publishing teams. Please try again.");
+    alert("Error publishing teams. Please try again.");
   }
 }
 
@@ -663,11 +592,7 @@ function updateSummary() {
   ).textContent = `${estimatedTeams} teams (est.)`;
 }
 
-// CAPTAINS AREA
-
-document
-  .getElementById("editCaptainsBtn")
-  .addEventListener("click", openCaptainEditor);
+// CAPTAIN FUNCTIONS
 
 function openCaptainEditor() {
   const modal = document.getElementById("captainModal");
@@ -741,7 +666,7 @@ function loadCaptainEditorContent() {
       .join("");
 }
 
-function addNewCaptain() {
+async function addNewCaptain() {
   const studentSelect = document.getElementById("studentSelect");
   const studentId = studentSelect.value;
 
@@ -750,91 +675,85 @@ function addNewCaptain() {
     return;
   }
 
-  const student = allStudents.find((s) => s.id === studentId);
-  if (student) {
-    student.isCaptain = true;
-    student._isNewDraft = true;
-    loadCaptainEditor();
-    studentSelect.value = "";
-  }
-}
-
-// document.getElementById("captainModal").innerHTML = `
-//   <div style="background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto;">
-//     <h3 style="margin-bottom: 15px;">Edit Captains</h3>
-
-//     <div style="margin-bottom: 15px;">
-//       <h4>Current Captains:</h4>
-//       <div id="currentCaptainsList" style="margin: 10px 0;"></div>
-//     </div>
-
-//     <div style="margin-bottom: 15px;">
-//       <h4>Make New Captain:</h4>
-//       <select id="studentSelect" class="form-control" style="margin-bottom: 10px;">
-//         <option value="">Select a student...</option>
-//       </select>
-//       <button class="btn btn-primary" id="addCaptainBtn" style="width: 100%;">Add as Captain</button>
-//     </div>
-
-//     <div class="btn-group" style="margin-top: 20px; display: flex; justify-content: space-between;">
-//       <button class="btn btn-secondary" id="closeModalBtn">Cancel</button>
-//       <button class="btn btn-success" id="saveCaptainsBtn">Save Changes</button>
-//     </div>
-//   </div>
-// `;
-
-document
-  .getElementById("closeModalBtn")
-  .addEventListener("click", closeCaptainEditor);
-document
-  .getElementById("addCaptainBtn")
-  .addEventListener("click", addNewCaptain);
-document
-  .getElementById("saveCaptainsBtn")
-  .addEventListener("click", saveCaptainChanges);
-
-function addNewCaptain() {
-  const studentSelect = document.getElementById("studentSelect");
-  const studentId = studentSelect.value;
-
-  if (!studentId) {
-    alert("Please select a student first!");
+  const student = allStudents.find((s) => s.id === parseInt(studentId));
+  // Check if already a captain
+  if (student.isCaptain === true) {
+    alert("This student is already a captain!");
     return;
   }
 
-  const student = allStudents.find((s) => s.id === studentId);
-  if (student) {
+  try {
+    // Update in database immediately
+    const { error } = await supabase
+      .from("members")
+      .update({ 
+        isCaptain: true,
+      })
+      .eq("id", studentId);
+
+    if (error) throw error;
+
+    // Update local state
     student.isCaptain = true;
-    loadCaptainEditor();
+    
+    // Refresh the modal display
+    loadCaptainEditorContent();
     studentSelect.value = "";
+    
+    console.log(`Added ${student.name} as captain`);
+    
+  } catch (error) {
+    console.error("Error adding captain:", error);
+    alert("Error adding captain. Please try again.");
   }
 }
-
-function removeCaptain(studentId) {
+async function removeCaptain(studentId) {
   const student = allStudents.find((s) => s.id === studentId);
   if (student) {
-    student.isCaptain = false;
-    loadCaptainEditor();
+    try {
+      // Update in database immediately
+      const { error } = await supabase
+        .from("members")
+        .update({ 
+          isCaptain: false,
+        })
+        .eq("id", studentId);
+
+      if (error) throw error;
+
+      // Update local state
+      student.isCaptain = false;
+      loadCaptainEditorContent();
+      
+    } catch (error) {
+      console.error("Error removing captain:", error);
+      alert("Error removing captain. Please try again.");
+    }
   }
 }
 
 async function saveCaptainChanges() {
   try {
     const now = new Date().toISOString();
+    const updates = [];
 
     for (const student of allStudents) {
-      await supabase
-        .from("members")
-        .update({
-          isCaptain: student.isCaptain === true,
-          updatedAt: now,
-        })
-        .eq("id", student.id);
+      updates.push(
+        supabase
+          .from("members")
+          .update({
+            isCaptain: student.isCaptain === true,
+          })
+          .eq("id", student.id)
+      );
     }
+
+    await Promise.all(updates);
     alert("Captain changes saved successfully!");
     closeCaptainEditor();
 
-    loadStudents();
+    // Reload students to get fresh data
+    await loadStudents();
   } catch (error) {
     console.error("Error saving captain changes:", error);
     alert("Error saving changes. Please try again.");
