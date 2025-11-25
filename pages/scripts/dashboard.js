@@ -143,9 +143,8 @@ function setUserRole(role) {
 async function logout() {
     try {
 
-  await logoutUser();
-        window.location.href = 'login.html';
-        
+    await logoutUser();
+    window.location.href = 'login.html';        
     } catch (error) {
         console.error('Logout error:', error);
        
