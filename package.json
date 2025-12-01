@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@supabase/supabase-js": "^2.86.0",
     "firebase": "^12.6.0"
   },
   "devDependencies": {
