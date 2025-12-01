@@ -255,4 +255,3 @@ window.initializeAuth = initializeAuth;
 window.getUserType = getUserType;
 window.isPageAllowed = isPageAllowed;
 window.logoutUser = logoutUser;
-export {};
