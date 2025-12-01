@@ -255,3 +255,5 @@ window.initializeAuth = initializeAuth;
 window.getUserType = getUserType;
 window.isPageAllowed = isPageAllowed;
 window.logoutUser = logoutUser;
+
+//TRYNA GET THE WORKFLOW BACK TO NORMAL
