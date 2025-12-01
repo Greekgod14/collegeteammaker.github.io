@@ -458,96 +458,55 @@
         <!-- Admin Navigation -->
         <div class="nav-group" data-role="admin">
           <div class="nav-group-title">Team Management</div>
-          <a
-            class="nav-item active"
-            data-section="dashboard"
-            onclick="loadSection('dashboard')"
-          >
+          <a class="nav-item active" data-section="dashboard">
             <span>Dashboard</span>
           </a>
-          <a
-            class="nav-item"
-            data-section="teamGeneration"
-            onclick="loadSection('teamGeneration')"
-          >
+          <a class="nav-item" data-section="teamGeneration">
             <span>Generate Teams</span>
           </a>
-          <a
-            class="nav-item"
-            data-section="teamManagement"
-            onclick="loadSection('teamManagement')"
-          >
+          <a class="nav-item" data-section="teamManagement">
             <span>Manage Teams</span>
           </a>
         </div>
         <div class="nav-group" data-role="admin">
           <div class="nav-group-title">Students</div>
-          <a
-            class="nav-item"
-            data-section="studentManagement"
-            onclick="loadSection('studentManagement')"
-          >
+          <a class="nav-item" data-section="studentManagement">
             <span>Student Database</span>
           </a>
-          <a
-            class="nav-item"
-            data-section="analytics"
-            onclick="loadSection('analytics')"
-          >
+          <a class="nav-item" data-section="analytics">
             <span>Analytics</span>
           </a>
         </div>
         <div class="nav-group" data-role="admin">
           <div class="nav-group-title">System</div>
-          <a
-            class="nav-item"
-            data-section="systemSettings"
-            onclick="loadSection('systemSettings')"
-          >
+          <a class="nav-item" data-section="systemSettings">
             <span>Settings</span>
           </a>
         </div>
         <!-- Student Navigation -->
         <div class="nav-group" data-role="student" style="display: none">
           <div class="nav-group-title">My Space</div>
-          <a
-            class="nav-item"
-            data-section="myTeam"
-            onclick="loadSection('myTeam')"
-          >
+          <a class="nav-item" data-section="myTeam">
             <span>My Team</span>
           </a>
-          <a
-            class="nav-item"
-            data-section="myTasks"
-            onclick="loadSection('myTasks')"
-          >
+          <a class="nav-item" data-section="myTasks">
             <span>Projects</span>
           </a>
-          <a
-            class="nav-item"
-            data-section="teamProgress"
-            onclick="loadSection('teamProgress')"
-          >
+          <a class="nav-item" data-section="teamProgress">
             <span>Team Progress</span>
           </a>
-          <a
-            class="nav-item"
-            data-section="resources"
-            onclick="loadSection('resources')"
-          >
+          <a class="nav-item" data-section="resources">
             <span>Resources</span>
           </a>
         </div>
         <div class="nav-group">
           <div class="nav-group-title">Account</div>
-          <a class="nav-item" onclick="logout()">
+          <a class="nav-item" data-action="logout">
             <span>Logout</span>
           </a>
         </div>
       </nav>
     </aside>
-
     <!-- Main -->
     <div class="main-wrapper">
       <header class="header">
@@ -726,7 +685,6 @@
                       Students
                     </div>
                   </div>
-                
                 </div>
               </div>
             </div>
@@ -736,15 +694,12 @@
               <h3 class="card-title">Quick Actions</h3>
             </div>
             <div style="display: flex; flex-wrap: wrap; gap: 10px">
-              <button
-                class="btn btn-primary"
-                onclick="loadSection('teamGeneration')"
-              >
+              <button class="btn btn-primary" data-section="teamGeneration">
                 Generate Teams
               </button>
               <button
                 class="btn btn-secondary"
-                onclick="loadSection('studentManagement')"
+                data-section="studentManagement"
               >
                 Manage Students
               </button>
@@ -763,7 +718,7 @@
           id="frameTeamManagement"
           data-src="pages/team-manage.html"
         ></iframe>
-        <iframe 
+        <iframe
           class="section-frame"
           id="frameStudentManagement"
           data-src="pages/student-management.html"
@@ -801,11 +756,9 @@
       </main>
     </div>
 
-   
-
     <div class="watermark">Prime Creation<br />(プライムクリエーション)</div>
     <script src="firestore.js"></script>
 
-    <script src="pages/scripts/dashboard.js"></script>
+    <script type="module" src="dist/dashboard.js"></script>
   </body>
 </html>
