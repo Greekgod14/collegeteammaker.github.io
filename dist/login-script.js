@@ -55,7 +55,11 @@ function login(username, password) {
         try {
             console.log("=== Login Attempt ===");
             console.log("Username:", username);
-            const { data: users, error: queryError } = yield supabase.from("Users").select("*").eq("username", username).limit(1);
+            const { data: users, error: queryError } = yield supabase
+                .from("Users")
+                .select("*")
+                .eq("username", username)
+                .limit(1);
             if (queryError) {
                 console.error("User query failed:", queryError);
                 return { success: false, error: "Database error. Please try again." };
@@ -115,7 +119,11 @@ function signup(email, password, username) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             console.log("=== Signup Attempt ===");
-            const { data: existingUsers, error: queryError } = yield window.supabase.from("Users").select("id").eq("username", username).limit(1);
+            const { data: existingUsers, error: queryError } = yield window.supabase
+                .from("Users")
+                .select("id")
+                .eq("username", username)
+                .limit(1);
             if (queryError) {
                 console.error("Username check error:", queryError);
                 return { success: false, error: "Database error. Please try again." };
@@ -139,7 +147,14 @@ function signup(email, password, username) {
             const userId = authData.user.id;
             console.log("Auth user created:", userId);
             console.log("Creating user profile...");
-            const { error: insertError } = yield window.supabase.from("Users").insert({uuid: userId,email: email,username: username,verified: false,});
+            const { error: insertError } = yield window.supabase
+                .from("Users")
+                .insert({
+                uuid: userId,
+                email: email,
+                username: username,
+                verified: false,
+            });
             if (insertError) {
                 console.error("User profile creation error:", insertError);
                 return {
