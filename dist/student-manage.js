@@ -365,4 +365,5 @@ window.closeAddModal = closeAddModal;
 window.saveStudent = saveStudent;
 window.clearAddModalForm = clearAddModalForm;
 window.openAddModal = openAddModal;
+``;
 export {};

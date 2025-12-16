@@ -446,3 +446,4 @@ declare global {
 (window as any).saveStudent = saveStudent;
 (window as any).clearAddModalForm = clearAddModalForm;
 (window as any).openAddModal = openAddModal;
+``

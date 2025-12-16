@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Team Management - College Team Maker</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Cinzel:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.9/build/pdfmake.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.9/build/vfs_fonts.js"></script>
+
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
@@ -620,6 +625,7 @@
                 <h3 class="card-title">Team Management</h3>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <button class="btn btn-primary" id="createTeamBtn">Create Team</button>
+                    <button class="btn btn-primary" id="printpdfbtn">Print PDF</button>
                     <button class="btn btn-secondary" id="manageCaptainsBtn">Manage Captains</button>
                 </div>
             </div>

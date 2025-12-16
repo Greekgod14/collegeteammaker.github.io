@@ -1,5 +1,6 @@
 export {};
 declare const supabase: any;
+declare const pdfMake: any;
 
 interface Team {
   id: string | number;
@@ -53,6 +54,10 @@ function setupEventListeners(): void {
   const createTeamBtn = document.getElementById("createTeamBtn");
   if (createTeamBtn) {
     createTeamBtn.addEventListener("click", openCreateTeamModal);
+  }
+  const printpdfbtn = document.getElementById("printpdfbtn");
+  if (printpdfbtn) {
+    printpdfbtn.addEventListener("click", exportTeamsPDF);
   }
 
   const manageCaptainsBtn = document.getElementById("manageCaptainsBtn");
@@ -1812,6 +1817,210 @@ lockButtonStyle.textContent = `
     background: #e67e22;
   }
 `;
+
+export async function exportTeamsPDF(
+): Promise<void> {
+const padAdmission = (value: number | null | undefined) =>
+  value == null ? "-" : String(value).padStart(4, "0");
+
+const formatGender = (value: string | null | undefined) => {
+  if (!value) return "-";
+  const v = value.toLowerCase();
+  if (v === "m" || v === "male") return "Male";
+  if (v === "f" || v === "female") return "Female";
+  return value; // fallback for any unexpected value
+};
+
+  // ---- Fetch data ----
+  const { data: teams, error: teamsError } = await supabase
+    .from("Teams")
+    .select("*");
+
+  if (teamsError) throw teamsError;
+
+  const { data: members, error: membersError } = await supabase
+    .from("members")
+    .select("*");
+
+  if (membersError) throw membersError;
+
+  // ---- Build member lookup ----
+  const memberMap = new Map<number, any>();
+  members.forEach((m: any) => memberMap.set(m.id, m));
+
+  // ---- Track assigned members ----
+  const assignedIds = new Set<number>();
+  teams.forEach((t: any) => {
+    if (Array.isArray(t.members)) {
+      t.members.forEach((id: number) => assignedIds.add(id));
+    }
+  });
+
+  const content: any[] = [];
+
+  // ---- Title ----
+  content.push({
+    text: "Team Allocation Report",
+    style: "title",
+    margin: [0, 0, 0, 20]
+  });
+
+  // ---- Teams ----
+  teams.forEach((team: any, index: number) => {
+    content.push({
+      text: `Team ${index + 1}: ${team.name || "Unnamed Team"}`,
+      style: "teamHeader",
+      margin: [0, 25, 0, 12]
+
+    });
+
+    const tableBody = [
+   [
+  { text: "S.No", style: "tableHeader" },
+  { text: "Name", style: "tableHeader" },
+  { text: "Department", style: "tableHeader" },
+  { text: "Admission No", style: "tableHeader" },
+  { text: "Gender", style: "tableHeader" }
+]
+
+    ];
+
+   const teamMembers = (team.members || [])
+  .map((id: number) => memberMap.get(id))
+  .filter(Boolean)
+  .sort((a: any, b: any) => {
+    const aCap = team.captain === a.id || a.isCaptain === true;
+    const bCap = team.captain === b.id || b.isCaptain === true;
+    return Number(bCap) - Number(aCap); // captains first
+  });
+
+let serial = 1;
+
+teamMembers.forEach((m: any) => {
+  const isCaptain =
+    team.captain === m.id || m.isCaptain === true;
+
+  tableBody.push([
+    { text: serial++, alignment: "center" },
+    {
+      text: isCaptain ? `${m.name} (Captain)` : m.name,
+      bold: true
+    },
+    m.department || "-",
+    padAdmission(m.admissionNumber),
+    formatGender(m.gender)
+  ]);
+});
+
+
+    content.push({
+      table: {
+        headerRows: 1,
+widths: [30, "*", "*", "*", "*"],
+        body: tableBody
+      },
+      layout: {
+ fillColor: (rowIndex: number, node: any) => {
+  if (rowIndex === 0) return "#eeeeee"; // header
+  const row = node.table.body[rowIndex];
+  if (row[1]?.text?.includes("(Captain)")) return "#fff3cd"; 
+  return rowIndex % 2 === 0 ? "#fafafa" : null;
+},
+
+  hLineColor: "#dddddd",
+  vLineColor: "#dddddd"
+}
+
+    });
+  });
+
+  content.push({
+  canvas: [
+    {
+      type: "line",
+      x1: 0,
+      y1: 0,
+      x2: 515,
+      y2: 0,
+      lineWidth: 1,
+      lineColor: "#cccccc"
+    }
+  ],
+  margin: [0, 12, 0, 12]
+});
+
+  // ---- Unassigned Members ----
+  content.push({
+    text: "Unassigned Students",
+    style: "teamHeader",
+    margin: [0, 25, 0, 10],
+    pageBreak: "before"
+  });
+
+  const unassignedBody = [
+    [
+      { text: "Name", style: "tableHeader" },
+      { text: "Department", style: "tableHeader" },
+      { text: "Admission No", style: "tableHeader" },
+      { text: "Gender", style: "tableHeader" }
+    ]
+  ];
+
+  members
+    .filter((m: any) => !assignedIds.has(m.id))
+    .forEach((m: any) => {
+      unassignedBody.push([
+        m.name || "-",
+        m.department || "-",
+padAdmission(m.admissionNumber),
+formatGender(m.gender)
+      ]);
+    });
+
+  content.push({
+    table: {
+      headerRows: 1,
+      widths: ["*", "*", "*", "*"],
+      body: unassignedBody
+    },
+    layout: "lightHorizontalLines"
+  });
+
+  // ---- Document definition ----
+  const docDefinition = {
+    pageSize: "A4",
+    pageMargins: [40, 60, 40, 60],
+    content,
+    styles: {
+      title: {
+        fontSize: 18,
+        bold: true,
+        alignment: "center"
+      },
+      teamHeader: {
+        fontSize: 14,
+        bold: true
+      },
+      tableHeader: {
+        bold: true,
+        fillColor: "#eeeeee"
+      }
+    },
+    footer: (currentPage: number, pageCount: number) => ({
+      text: `Page ${currentPage} of ${pageCount}`,
+      alignment: "center",
+      fontSize: 9,
+      margin: [0, 10, 0, 0]
+    })
+  };
+
+  // ---- Generate PDF ----
+  pdfMake.createPdf(docDefinition).download(
+    "team-allocation-report.pdf"
+  );
+}
+
+
 document.head.appendChild(lockButtonStyle);
 
 (window as any).toggleTeamLock = toggleTeamLock;
@@ -1833,3 +2042,4 @@ document.head.appendChild(lockButtonStyle);
 (window as any).closeTeamManagementModal = closeTeamManagementModal;
 (window as any).openFillTeamsModal = openFillTeamsModal;
 (window as any).closeFillTeamsModal = closeFillTeamsModal;
+(window as any).exportTeamsPDF = exportTeamsPDF;
