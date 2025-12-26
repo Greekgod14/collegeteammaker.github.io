@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mentor Assignment - College Team Maker</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Cinzel:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.9/build/pdfmake.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.9/build/vfs_fonts.js"></script>
+    <style>
+      :root {
+        --primary: #667eea;
+        --secondary: #764ba2;
+        --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --text-dark: #333;
+        --text-light: #666;
+        --bg-light: #f5f7fa;
+        --white: #fff;
+        --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        --radius: 12px;
+        --success: #27ae60;
+        --warning: #f39c12;
+        --danger: #e74c3c;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        font-family: "Noto Sans JP", sans-serif;
+        background: var(--bg-light);
+        color: var(--text-dark);
+        line-height: 1.6;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .card {
+        background: var(--white);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #eee;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .card-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-dark);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 10px;
+        font-family: "Noto Sans JP", sans-serif;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+      }
+
+      .btn-primary {
+        background: var(--gradient);
+        color: var(--white);
+      }
+
+      .btn-primary:hover,
+      .btn-primary:active {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+      }
+
+      .btn-secondary {
+        background: var(--bg-light);
+        color: var(--text-dark);
+        border: 1px solid #e0e0e0;
+      }
+
+      .btn-secondary:hover,
+      .btn-secondary:active {
+        background: #f0f0f0;
+      }
+
+      .btn-danger {
+        background: var(--danger);
+        color: var(--white);
+      }
+
+      .btn-danger:hover,
+      .btn-danger:active {
+        background: #c82333;
+      }
+
+      .btn-sm {
+        padding: 6px 12px;
+        font-size: 12px;
+      }
+
+      .search-box {
+        flex: 1;
+        min-width: 200px;
+        position: relative;
+        margin-bottom: 15px;
+      }
+
+      .search-box input {
+        width: 100%;
+        padding: 12px 15px 12px 40px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-family: "Noto Sans JP", sans-serif;
+        font-size: 14px;
+        transition: border-color 0.3s;
+      }
+
+      .search-box input:focus {
+        outline: none;
+        border-color: var(--primary);
+      }
+
+      .search-box::before {
+        content: "🔍";
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+
+      .form-control {
+        width: 100%;
+        padding: 10px 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-family: "Noto Sans JP", sans-serif;
+        font-size: 14px;
+        margin-top: 5px;
+        transition: border-color 0.3s;
+      }
+
+      .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: var(--text-dark);
+      }
+
+      .members-list {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow-y: auto;
+        background: var(--white);
+      }
+
+      .member-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 15px;
+        border-bottom: 1px solid #eee;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .member-item:last-child {
+        border-bottom: none;
+      }
+
+      .member-item.selectable {
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .member-item.selectable:hover {
+        background-color: #f0f0f0;
+      }
+
+      .member-item.selectable.selected {
+        background-color: rgba(102, 126, 234, 0.1);
+        border-left: 4px solid var(--primary);
+      }
+
+      .member-info {
+        flex: 1;
+        min-width: 150px;
+      }
+
+      .member-name {
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+
+      .member-details {
+        font-size: 12px;
+        color: #666;
+      }
+
+      .member-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-light);
+      }
+
+      .empty-state span {
+        font-size: 48px;
+        display: block;
+        margin-bottom: 15px;
+        opacity: 0.5;
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        overflow-y: auto;
+        padding: 20px 0;
+      }
+
+      .modal.active {
+        display: block;
+      }
+
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        overflow: auto;
+      }
+
+      .modal-overlay.active {
+        display: block !important;
+      }
+
+      .modal-overlay .modal {
+        background-color: #fefefe;
+        margin: 5% auto;
+        padding: 0;
+        border: none;
+        width: 90%;
+        max-width: 600px;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        max-height: 85vh;
+      }
+
+      .modal-content {
+        background-color: #fefefe;
+        margin: 0;
+        padding: 0;
+        border: none;
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .modal-header {
+        padding: 20px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+      }
+
+      .modal-header h3 {
+        margin: 0;
+        flex: 1;
+        font-size: 18px;
+      }
+
+      .close {
+        background: none;
+        border: none;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        color: #aaa;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.3s;
+      }
+
+      .close:hover,
+      .close:active {
+        color: #000;
+      }
+
+      .modal-body {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+      }
+
+      .modal-footer {
+        padding: 20px;
+        background: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        flex-shrink: 0;
+      }
+
+      .modal-overlay .modal-footer {
+        padding: 20px;
+        background: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+
+      .mentor-badge {
+        background: #667eea;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: bold;
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 20px;
+        align-items: center;
+      }
+
+      .no-selection {
+        padding: 20px;
+        text-align: center;
+        color: #666;
+      }
+
+      @media (min-width: 600px) {
+        .search-box {
+          min-width: 300px;
+        }
+      }
+
+      @media (min-width: 768px) {
+        body {
+          padding: 30px;
+        }
+
+        .card {
+          padding: 25px;
+        }
+
+        .modal-overlay .modal {
+          max-width: 700px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Mentor Management Section -->
+   <section class="card">
+      <div class="card-header">
+        <h3 class="card-title">Mentor → Assigned Teams</h3>
+                <button class="btn btn-primary" id="printpdfbtn">Print PDF</button>
+        <button class="btn btn-primary" id="printpdfbtnModded">
+          Modded Print PDF
+        </button>
+
+      </div>
+
+      <div id="mentorAssignments">
+        <div class="empty-state">
+          <span>⏳</span>
+          <p>Loading mentor assignments...</p>
+        </div>
+      </div>
+    </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h3 class="card-title">Unassigned Teams</h3>
+        </div>
+
+        <div id="unassignedTeams">
+          <div class="empty-state">
+            <p>No unassigned teams</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Add Mentor Modal -->
+      <div class="modal-overlay" id="addMentorModal">
+        <div class="modal">
+          <div class="modal-header">
+            <h3>Add New Mentor</h3>
+            <button class="close" onclick="closeMentorModal()">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="mentorName">Mentor Name:</label>
+              <input
+                type="text"
+                id="mentorName"
+                class="form-control"
+                placeholder="Enter mentor name..."
+              />
+            </div>
+            <div class="form-group">
+              <label for="mentorEmail">Email:</label>
+              <input
+                type="email"
+                id="mentorEmail"
+                class="form-control"
+                placeholder="Enter mentor email..."
+              />
+            </div>
+            <div class="form-group">
+              <label for="mentorDepartment">Department:</label>
+              <input
+                type="text"
+                id="mentorDepartment"
+                class="form-control"
+                placeholder="Enter department..."
+              />
+            </div>
+            <div class="form-group">
+              <label for="mentorPhone">Phone:</label>
+              <input
+                type="tel"
+                id="mentorPhone"
+                class="form-control"
+                placeholder="Enter phone number..."
+              />
+            </div>
+            <div class="form-group">
+              <label for="mentorAssign">Number of Teams to Assign:</label>
+              <input
+                type="tel"
+                id="mentorAssign"
+                class="form-control"
+                placeholder="Enter number of teams..."
+              />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeMentorModal()">
+              Cancel
+            </button>
+            <button class="btn btn-primary" id="confirmAddMentor">
+              Add Mentor
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Assign Mentors to Teams Section -->
+      <section class="card">
+        <div class="card-header">
+          <h3 class="card-title">Assign Mentors to Teams</h3>
+          <button class="btn btn-primary" id="AutoAssignbtn">
+            Auto Assign
+          </button>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-box">
+            <input
+              type="text"
+              id="teamSearch"
+              placeholder="Search teams..."
+              aria-label="Search teams"
+            />
+          </div>
+        </div>
+
+        <div id="teamsList" class="members-list">
+          <div class="empty-state">
+            <span>⏳</span>
+            <p>Loading teams...</p>
+          </div>
+        </div>
+      </section>
+    </div>
+    <section class="card">
+      <div class="card-header">
+        <h3 class="card-title">Mentor Management</h3>
+        <button class="btn btn-primary" id="addMentorBtn">+ Add Mentor</button>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-box">
+          <input
+            type="text"
+            id="mentorSearch"
+            placeholder="Search mentors..."
+            aria-label="Search mentors"
+          />
+        </div>
+      </div>
+
+      <div id="mentorsList" class="members-list">
+        <div class="empty-state">
+          <span>⏳</span>
+          <p>Loading mentors...</p>
+        </div>
+      </div>
+    </section>
+ 
+    <!-- Assign Team Modal -->
+    <div class="modal-overlay" id="assignTeamModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 id="assignTeamTitle">Assign Mentor to Team</h3>
+
+          <button class="close" onclick="closeAssignTeamModal()">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <input
+              type="text"
+              id="mentorSelectSearch"
+              class="form-control"
+              placeholder="Search mentors..."
+            />
+          </div>
+          <div
+            id="assignMentorsList"
+            class="members-list"
+            style="max-height: 400px; overflow-y: auto"
+          >
+            <!-- Mentors will be populated here -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeAssignTeamModal()">
+            Cancel
+          </button>
+          <button class="btn btn-primary" id="confirmAssignMentor">
+            Assign
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="../firestore.js"></script>
+    <script type="module" src="../dist/assign-mentors.js"></script>
+  </body>
+</html>

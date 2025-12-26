@@ -13,7 +13,6 @@ const DASHBOARD_TITLES = {
     teamGeneration: "Generate Teams",
     teamManagement: "Manage Teams",
     studentManagement: "Student Database",
-    mentorManagement: "Mentor Management",
     analytics: "Analytics",
     systemSettings: "System Settings",
     myTeam: "My Team",
@@ -25,7 +24,6 @@ const ADMIN_SECTIONS = new Set([
     "teamGeneration",
     "teamManagement",
     "studentManagement",
-    "mentorManagement",
     "analytics",
     "systemSettings",
 ]);

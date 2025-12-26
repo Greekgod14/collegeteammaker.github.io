@@ -23,7 +23,6 @@ const ALLOWED_PAGES = {
         "settings.html",
         "team-manage.html",
         "student-management.html",
-        "assign-mentors.html",
     ],
     student: [
         "dashboard.html",
@@ -31,7 +30,6 @@ const ALLOWED_PAGES = {
         "profile.html",
         "courses.html",
         "assignments.html",
-        "mentors.html",
     ],
     unverified: ["signupprocess.html", "profile.html"],
     public: ["login.html", "forgot-password.html"],
@@ -257,5 +255,4 @@ window.initializeAuth = initializeAuth;
 window.getUserType = getUserType;
 window.isPageAllowed = isPageAllowed;
 window.logoutUser = logoutUser;
-
-//TRYNA GET THE WORKFLOW BACK TO NORMAL
+export {};
